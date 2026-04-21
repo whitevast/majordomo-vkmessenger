@@ -1,0 +1,271 @@
+<br/>
+<a href="https://mjdm.ru/forum/viewtopic.php?p=135498" target="_blank">Тема на форуме</a><br>
+<a href="https://vk.com/im/convo/2000000033" target="_blank"> Группа в ВК</a>
+<div class="panel-group" id="accordion" style="width:98%">
+	<div class="panel panel-info">
+		<div class="panel-heading">
+		<a data-toggle="collapse" data-parent="#accordion" href="#reg_help">Подключение к сообществу</a>
+		</div>
+		<div class="panel-body collapse" id="reg_help">
+		<p>Для работы модуля необходимо создать сообщество и получить его ключ доступа. <br>
+		Для этого переходим по <a href="https://vk.com/groups" target="_blank">ссылке</a> и создаём сообщество.<br>
+		Называем как угодно, выбираем тематику, например "Дом и дача", нажимаем "Создать сообщество". Далее можно выбрать аватарку и сразу добавить участников. Можно сделать это и позже.<br>
+		Далее заходим в Управление и меняем Тип сообщества на "Частное" (или другое по желанию). Здесь же можно поменять аватарку и имя сообщества.<br>
+		Далее в меню Сообщества выбираем пункт "Сообщения" и подпункт "Настройки для бота". Включаем "Возможности бота" и ставим галку "Добавить кнопку «Начать»"<br>
+		После в меню Сообщества выбираем пункт "Дополнительно" и подпункт "Работа с API". Нажимаем на кнопку "Создать ключ" и проставляем все галочки. добавляя тем самым максимальные права. Нажимаем "Создать", подтверждаем кодом из СМС.<br>
+		После этого копируем ключ и переходим в настройки модуля.
+		<br>
+		В <b>настройки</b> модуля вносится ключ вида "<b>vk1.a.yZ7PrepLXsP7CDJ89F1LKqb-EzmA6DPUqCAxiKvszSdMO1B1r7Ca1qlN5QabM9q982QQtgWxgRLU-cekQHxr810RXvl-twHKWcB2_us_6XnWHVW-gIxhlxs0MBMwmU5dzX5JKLp4QM2Qiy9YaqIGh74rXxuO3kKzfSXIQkGwzkIzPYH0lDFoMkF-YwGSsc87hTYPF-tq9-mlQJufIWetHA</b>".</code></p>
+		</div>
+	</div>
+	<div class="panel panel-info">
+		<div class="panel-heading">
+		<a data-toggle="collapse" data-parent="#accordion" href="#settings_help">Регистрация и настройка пользователя</a>
+		</div>
+		<div class="panel-body collapse" id="settings_help">
+		<p><b>Регистрация</b></br>
+		Добавляем подписчиков через меню Управленя сообществом (Подписчики -> Приглашения).
+		Далее каждому подписчику для возможности принятия сообщений нужно нажать в клиенте кнопку "Начать".<br>
+		Либо отправить любое сообщение.<br>
+		<p><b>Режим без звука</b></br>
+        При включенной опции пользователю все сообщения от бота будут приходить без звука (в тихом режиме).  <br>
+        В опции "Приоритет истории сo звуком" можно задать уровень важности сообщений истории, которые будут приходить со звуком.<br>
+        При отправке сообщений из своих скриптов/методов можно принудительно задать параметр отправки со звуком или без (см. ниже).
+        </p>
+		</div>
+	</div>
+	<div class="panel panel-info">
+		<div class="panel-heading">
+		<a data-toggle="collapse" data-parent="#accordion" href="#commands_help">Команды</a>
+		</div>
+		<div class="panel-body collapse" id="commands_help">
+		<div style="width:900px">
+		Команды используются для построения <a href="https://dev.vk.com/ru/api/bots/development/keyboard" target="_blank">клавиатуры</a> в клиенте. Одним нажатием кнопки из этой клавиатуры осуществляется какое либо действие, в зависимости от типа кнопки.</br>
+		<div class="table-responsive">
+		<table class="table table-striped">
+		<tr>
+		<td><b>Тип кнопки</br></td>
+		<td><b>Описание</br></td>
+		</tr>
+		<tr><td><strong>text</strong></td><td>Отправляет сообщение со своим именем. Имеет поле Код. Также можно отлавливать в событии, как текстовое сообщение</td></tr>
+        <tr><td><strong>location</strong></td><td>Используется для отправки местоположения. Нажатие можно отловить в событии "Местоположение". Также, если отправитель привязан к пользователю системы, передаёт координаты в модуль GPS трекер</td></tr>
+        <tr><td><strong>vkpay</strong></td><td>Открывает окно оплаты VK Pay с предопределёнными параметрами. Параметры задаются в поле "Данные" в виде строки, содержащей параметры платежа VK Pay и идентификатор приложения в параметре aid, отделённый &. Пример: <i>action=transfer-to-group&group_id=1&aid=10</i>.</td></tr>
+		<tr><td><strong>open_link</strong></td><td>Открывает ссылку, указанную в поле "Данные"</td></tr>
+		<tr><td><strong>open_app</strong></td><td>Открывает мини-приложение или игру, идентификатор которой указан в поле "Данные"</td></tr>
+		<tr><td><strong>callback</strong></td><td>Не отправляет сообщение, но отправляет факт нажатия на сервер. Имеет поле Код. События именно этого типа кнопок отлавливаются в событии callback. В данном случае $callback (или $payload) = Имя кнопки</td></tr>
+		</table>
+		</div>
+		Для типов text и callback можно выбрать цвет.</br>
+		<div class="table-responsive">
+		<table class="table table-striped">
+		<td><b>Цвет</br></td>
+		<td><b>Описание</br></td>
+		</tr>
+		<tr><td><strong>primary</strong></td><td>Используется для кнопок, выполняющих основное действие.</td></tr>
+        <tr><td><strong>secondary</strong></td><td>Используется для обычных кнопок.</td></tr>
+		<tr><td><strong>negative</strong></td><td>Используется для кнопок, выполняющих опасное действие или отмену, например «Удалить» или «Отклонить»..</td></tr>
+		<tr><td><strong>positive</strong></td><td>Используется для кнопок, с помощью которых пользователь выражает согласие или подтверждает свои действия, например «Согласиться» или «Подтвердить».</td></tr>
+		</table>
+		</div>
+		У каждой кнопки есть настройка контроля доступа, где можно задать пользователей, которым данная команда доступна.</br>
+		<!--Если у команды поле код пусто, то команда передается дальше на обработку в сценарии и в processCommand.</br>
+		Если поле кода не пустое, то выполняется только код-->
+		При нажатии на кнопку в клиенте выполняется код из поля код</br>
+		Для отправки ответа на команду в конце кода должен быть <b>return</b> с текстовым сообщением.</br>
+		Можно сформировать в коде клавиатуру с помощью функций buildKeyBoardButton() и buildKeyBoard(). Имя переменной клавиатуры должно быть $keyboard. В таком случае, клавиатура будет передана с сообщением <b>return</b></br>
+		<!--Кроме этого можно отправлять <a href="http://apps.timwhitlock.info/emoji/tables/unicode" target="_blank">emoji</a>.
+		<code style="display:block">
+		$emoji = json_decode('"'.'\ud83d\udca1'.'"');
+		return $emoji;</code></br>-->
+		В коде команды через переменную <b>$user_id</b> можно узнать ID пользователя нажавшего кнопку.</br>
+		<code style="display:block">return "Ваш UserID - ".$user_id; </code>
+		</div>
+		</div>
+	</div>
+
+	<div class="panel panel-info">
+		<div class="panel-heading">
+		<a data-toggle="collapse" data-parent="#accordion" href="#events_help">События</a>
+		</div>
+		<div class="panel-body collapse" id="events_help">
+		Данный функционал позволяет навесить на события, такие как получение текстового сообщения, файла, граффити, местоположения и др, свои обработчик.</br>
+		Например, при получении местоположения, выполнить какие-то действия с координатами.
+		Для каждого из типов событий в выполняемый код передаются определенные параметры, такие как например <b>$user_id</b>. 
+		Более подробно о параметрах расписано в подсказке, которая появляется при выборе типа события.</br>
+        Для выхода из обработчика событий необходимо задать в коде обраюотчика параметр <b>$skip=true;</b>. Это нужно для того чтобы модуль перестал вызывать все подходящие обработчики, когда нужный сработал.
+		</div>
+	</div>
+	
+	<div class="panel panel-info">
+		<div class="panel-heading">
+		<a data-toggle="collapse" data-parent="#accordion" href="#keyboard_help">Формирование клавиатуры</a>
+		</div>
+		<div class="panel-body collapse" id="keyboard_help">
+		<div style="width:900px">
+		Чтобы сформировать клавиатуру в коде, нужно действовать по следующему алгоритму:<br>
+		1.Формируем кнопки клавиатуры с помощью функции <strong>buildKeyBoardButton($name, $type, $payload, $color, $data)</strong><br>
+		<div class="table-responsive">
+		<table class="table table-striped">
+		<td><b>Параметр</br></td>
+		<td><b>Описание</br></td>
+		<td><b>Возможные значения</br></td>
+		</tr>
+		<tr><td><strong>$name</strong></td><td>Имя кнопки</td><td>текст</td></tr>
+        <tr><td><strong>$type</strong></td><td>Тип кнопки, согласно описанию из раздела "Команды"</td><td>text, location, vkpay, open_link, open_app, callback</td></tr>
+		<tr><td><strong>$payload</strong></td><td>Данные для определения, что была нажата конкретная кнопка в событии callback. Если пустой, чтановится равен имени кнопки.</td><td>текст</td></tr>
+		<tr><td><strong>$color</strong></td><td>Цвет кнопки для типов text и callback согласно описанию из раздела "Команды"</td><td>primary, secondary, positiv, negative</td></tr>
+		<tr><td><strong>$data</strong></td><td>Данные для кнопок vkpay, open_link, open_app</td><td>Параметры платежа, ссылка или ID приложения</td></tr>
+		</table>
+		</div>
+		Параметры начиная с $payload необязательны для заполнения.<br>
+		Формируем таким образом необходимое количество кнопок.<br>
+		<pre>
+		$buttons[] = $this->buildKeyBoardButton('Кнопка 1', 'text', '', 'secondary);
+		$buttons[] = $this->buildKeyBoardButton('Кнопка 2', 'location');
+		$buttons[] = $this->buildKeyBoardButton('Кнопка 3', 'open_link, '', '', 'https://vk.com');
+		$buttons[] = $this->buildKeyBoardButton('Кнопка 4', 'callback, 'button4', 'positive');
+		</pre>
+		2. Формируем клавиатуру с помощью функции <strong>buildKeyBoard($buttons, $inline, $one_time)</strong><br>
+		<div class="table-responsive">
+		<table class="table table-striped">
+		<td><b>Параметр</br></td>
+		<td><b>Описание</br></td>
+		<td><b>Возможные значения</br></td>
+		</tr>
+		<tr><td><strong>$buttons</strong></td><td>Массив, сформированный на этапе 1</td><td>массив кнопок, сформированный buildKeyBoardButton()</td></tr>
+        <tr><td><strong>$inline</strong></td><td>Тип клавиатуры, true - клавиатура в сообщении, false - под полем ввода текста</td><td>true, false</td></tr>
+		<tr><td><strong>$one_time</strong></td><td>Если клавиатура не inline, то данный параметр скрывает клавиатуру после нажатия на кнопку</td><td>true, false</td></tr>
+		</table>
+		</div>
+		Клавиатура готова! Можно передать её пользователю.<br>
+		<pre>
+		$keyboard = $this->buildKeyBoard($buttons, true);
+		$this->sendMessageToUser($user_id, 'Клавиатура для Вас', $keyboard);</pre>
+		Нужно иметь ввиду, что не-inline клавиатура будет заменена сформированной в модуле клавиатурой при отправке следующего сообщения.
+		</div>
+		</div>
+	</div>
+	
+	<div class="panel panel-info">
+		<div class="panel-heading">
+		<a data-toggle="collapse" data-parent="#accordion" href="#webhook_help">Webhook</a>
+		</div>
+		<div class="panel-body collapse" id="webhook_help">
+		<p><b>Для чего?</b><br>
+		Для того, что бы исключить постоянный опрос серверов на наличие новых сообщений. 
+		Сервера Вконтакте сами уведомят о поступлении нового сообщения.</p> 
+		<p><b>Как включить?</b></br>
+		1. Ваш сервер должен быть доступен из интернет, а именно страница https://ваш_сервер/webhook_vkmessenger.php<br>
+		2. В поле <b>Webhook URL</b> задается имя вашего сервера или ip<br>
+		3. Нажатием кнопки <u>"Set Webhook"</u> отправляется запрос на установку вашего адреса для webhook. Результат отобразится ниже кнопки.</p>
+		<p><b>Плюсы</b><br>
+		1. Быстрый ответ на команду<br>
+		2. Нет постоянных запросов на наличие новых сообщений</br>
+		3. Работает независимо от того, запущен основной цикл или нет.</p>
+		<p>Текущий статус использования webhook можно узнать нажав кнопку <u>"Status webhook"</u></p>
+		</div>
+	</div>
+
+	<div class="panel panel-info">
+		<div class="panel-heading">
+		<a data-toggle="collapse" data-parent="#accordion" href="#code_help">Вызов модуля в своих скриптах/методах</a>
+		</div>
+		<div class="panel-body collapse" id="code_help">
+		<p><b>Для отправки текстовых сообщений</b><br>
+		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
+        $vkmessenger_module = new vkmessenger();<br>
+        $text = "test message";<br>
+        $vkmessenger_module->sendMessageToUser($user, $text);<br>
+		$vkmessenger_module->sendMessageToUser($user, $text, '', true); // без звука<br>
+        $vkmessenger_module->sendMessageToAdmin($text." to admin");<br>
+		$vkmessenger_module->sendMessageToAdmin($text, true);// без звука<br>
+        $vkmessenger_module->sendMessageToAll($text." to all");<br>
+        $vkmessenger_module->sendMessageToAll($text, true);// без звука<br>
+
+		<p><b>Для отправки изображений</b><br>
+		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
+        $vkmessenger_module = new vkmessenger();<br>
+        $img = '/var/www/images/trees.jpg';<br>
+        $vkmessenger_module->sendImageToUser(139809588, $img, 'Описание');<br>
+		$vkmessenger_module->sendImageToUser($user, $img, 'Описание', '', true); // без звука<br>
+        $vkmessenger_module->sendImageToAdmin($img);<br>
+		$vkmessenger_module->sendImageToAdmin($img, 'Описание','', true); // без звука<br>
+        $vkmessenger_module->sendImageToAll($img);<br>
+        $vkmessenger_module->sendImageToAll($img, '', '', true); // без звука<br>
+        </code>
+		К изображению можно добавить текстовое описание</p>
+	
+        <!--<p><b>Для отправки видео</b><br>
+		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
+        $vkmessenger_module = new vkmessenger();<br>
+        $vkmessenger_module->sendVideoToUser(139809588, '/var/www/files/file.mp4', 'Description');<br>
+        $vkmessenger_module->sendVideoToAdmin('/var/www/files/file.mp4');<br>
+        $vkmessenger_module->sendVideoToAll('/var/www/files/file.mp4');</code>
+		К видео можно добавить текстовое описание</p>
+	
+		<p><b>Для отправки файлов</b><br>
+		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
+		$vkmessenger_module = new vkmessenger();<br>
+		$vkmessenger_module->sendFileToUser(139809588, '/var/www/file.txt');<br>
+		$vkmessenger_module->sendFileToAdmin('/var/www/file.txt');<br>
+		$vkmessenger_module->sendFileToAll('/var/www/file.txt');</code></p>
+		
+		<p><b>Для отправки голосового сообщения</b><br>
+		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
+		$vkmessenger_module = new vkmessenger();<br>
+		$vkmessenger_module->sendVoiceToUser(139809588, $file_path);<br>
+		$vkmessenger_module->sendVoiceToAdmin($file_path);<br>
+		$vkmessenger_module->sendVoiceToAll($file_path);</code></p>
+
+		<p><b>Для отправки стикеров</b><br>
+		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
+		$vkmessenger_module = new vkmessenger();<br>
+		$vkmessenger_module->sendStickerToUser(139809588 ,"BQADAgAD2gADeVziCaKoJ-z5_rAfAg");<br>
+		$vkmessenger_module->sendStickerToAdmin("BQADAgAD2gADeVziCaKoJ-z5_rAfAg");<br>
+		$vkmessenger_module->sendStickerToAll("BQADAgAD2gADeVziCaKoJ-z5_rAfAg");</code>
+		Для получения кода стикера (вида "BQADAgAD2gADeVziCaKoJ-z5_rAfAg") нужно отправить боту стикер и посмотреть код в "Истории событий" модуля.</p>
+
+		<p><b>Для отправки местоположения</b><br>
+		<code style="display:block">include(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
+		$vkmessenger_module = new vkmessenger();<br>
+		$vkmessenger_module->sendLocationToUser(139809588, 58.5876084, 49.6533398);<br>
+		$vkmessenger_module->sendLocationToAdmin(58.5876084, 49.6533398);<br>
+		$vkmessenger_module->sendLocationToAll(58.5876084, 49.6533398); </code></p>
+
+		<p><b>Для отправки места (местоположение с описанием)</b><br>
+		<code style="display:block">include(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
+		$vkmessenger_module = new vkmessenger();<br>
+		$vkmessenger_module->sendVenueToUser(139809588, 58.5876084, 49.6533398,'Venue', 'Address');<br>
+		$vkmessenger_module->sendVenueToAdmin(58.5876084, 49.6533398, 'Venue', '');<br>
+		$vkmessenger_module->sendVenueToAll(58.5876084, 49.6533398, 'Venue', 'Address'); </code></p>
+		
+		<p><b>Для отправки статуса действия</b><br>
+		Применяется для отображения действия, которое выполняется на стороне бота(для долго выполняемых скриптов)<br>
+		Параметры функции <u>sendAction($chat_id,$action)</u></br>
+		<u>$chat_id - идентификатор чата</u><br>
+		<u>$action - действие</u>
+		<ul><li>typing - печатает...</li>
+		<li>upload_photo - загрузка фото</li>
+		<li>record_video or upload_video - загрузка видео</li>
+		<li>record_audio or upload_audio - загрузка аудио</li>
+		<li>upload_document - загрузка документа</li>
+		<li>find_location - поиск местоположения</li></ul>
+		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
+		$vkmessenger_module = new vkmessenger();<br>
+		$vkmessenger_module->sendAction($chat_id,"typing");<br>
+		///<br>
+		...........<br>
+		///<br>
+		$vkmessenger_module->sendMessage($chat_id,$message); </code></p>
+		
+        <p><b>Поддержка всплывающих сообщений (answerCallbackQuery)</b><br>
+        Применяется для отображения ответа на callback запрос в виде всплывающего уведомления<br>
+        Параметры функции <b>sendAnswerCallbackQuery($callback_id, $text, $show_alert = false )</b></br>
+        <b>$callback_id</b> - идентификатор callback запроса</br>
+        <b>$text</b> - текст оповещения</br>
+        <b>$show_alert</b> : false - всплывающее уведомление (закрывается само); true - всплывающее уведомление требующее подтверждения (с кнопкой OK)
+		</p>
+		-->
+		</div>
+	</div>
+</div>

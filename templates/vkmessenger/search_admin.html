@@ -1,0 +1,196 @@
+<style>
+
+.tooltip.top .tooltip-arrow {
+  border-top-color: #EDEDED;
+}
+
+.tooltip.right .tooltip-arrow {
+  border-right-color: #EDEDED;
+}
+
+.tooltip.bottom .tooltip-arrow {
+  border-bottom-color: #EDEDED;
+}
+
+.tooltip.left .tooltip-arrow {
+  border-left-color: #EDEDED;
+}
+.tooltip-inner {
+    max-width: 900px;
+    min-width: 300px;
+    color: #000;
+    text-align: lseft;
+    background-color: #EDEDED;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    box-shadow: 5px 5px 0.5em -0.1em rgba(0,0,6,0.5);
+}
+</style>
+
+<script type="text/javascript">
+	function showInfo(){  
+	    var url="?webhookinfo=1";
+		$.ajax({  
+			url: url,  
+			cache: false,  
+			success: function(html){  
+				$("#info").html(html);  
+			}  
+		});  
+	}  
+	function setWebHook(){  
+		var webhook_url = document.getElementsByName('vk_webhook_url')[0].value;
+		webhook_url = encodeURIComponent(webhook_url);
+	    var url="?setwebhook=1&vk_webhook_url="+webhook_url;
+		$.ajax({  
+			url: url,  
+			cache: false,  
+			success: function(html){  
+				$("#info").html(html);  
+			}  
+		});  
+	}  
+	function cleanWebHook(){  
+	    var url="?cleanwebhook=1";
+		$.ajax({  
+			url: url,  
+			cache: false,  
+			success: function(html){  
+				$("#info").html(html);  
+			}  
+		});  
+	}  
+    $(function () {
+        // инициализация всплывающих подсказок
+        $('[data-toggle="tooltip"]').tooltip({
+            delay: { show: 0, hide: 100 }
+        });
+    });
+</script> 
+<div class="row">
+<div class="col-md-1">
+ <a href="https://vk.com/[#CLUB#]" target="_blank">
+	<img src="<#ROOTHTML#>img/modules/vkmessenger.png" height="25"> Вконтакте
+ </a>&nbsp;
+ </div>
+	<div class="col-md-4">
+		<a class="btn btn-default" href="#api_settings" data-toggle="collapse"><i class="glyphicon glyphicon-cog"></i> <#LANG_SETUP#></a>
+		&nbsp;&nbsp;&nbsp;
+		 <span tabindex="0" data-toggle="tooltip" data-html="true" data-placement="right" 
+            data-title="
+            <div class='float-right'>
+            <img src='<#ROOTHTML#>cms/cached/vkmessenger/[#GROUP_ID#].jpg' height='80px' onerror='this.src='<#ROOTHTML#>templates/vkmessenger/img/none.jpg''>
+            </div>
+            <p style='text-align:left'>ID:<b>[#GROUP_ID#]</b><br>
+                        Name:<b>[#GROUP_NAME#]</b></p>">
+        <img src="<#ROOTHTML#>cms/cached/vkmessenger/[#GROUP_ID#].jpg" height="35px" style="border-radius: 0 50% 50%;" onerror="this.src='<#ROOTHTML#>templates/vkmessenger/img/none.jpg'">
+    </span>
+	&nbsp;<b>[#GROUP_NAME#]</b>
+	</div>
+	<div class="col-md-6">
+		[#module name="xray" action="service" cycle="vkmessenger"#]
+	</div>
+</div>
+<!-- <div class="collapse[#if ERR#] show[#endif ERR#]" id='api_settings'> -->
+<div class="collapse" id='api_settings'>
+&nbsp;
+<form action="?" method="post" enctype="multipart/form-data" name="frmEdit" class="form-horizontal">
+<fieldset>
+    <div class="form-group">
+	<label for="title" class="col-lg-4 control-label">
+	<#LANG_VK_TOKEN#>
+	<span data-toggle="tooltip" data-html="true" data-placement="right" data-title="<#LANG_HELP_TOKEN#>">
+	<i class="glyphicon glyphicon-info-sign text-primary"></i>
+	</label>
+	<div class="col-lg-6"><input class="form-control" id="api_key" name="api_key" value="[#API_KEY#]" type="text" class="input"></div>
+	</div>
+	[#if API_KEY!=''#]
+	<div class="form-group">
+	<label class="col-lg-4 control-label"><#LANG_VK_STORAGE_PATH#>
+	<span data-toggle="tooltip" data-placement="right" data-title="<#LANG_HELP_STORAGE#>">
+	<i class="glyphicon glyphicon-info-sign text-primary"></i>
+	</label>
+	<div class="col-lg-6"><input class="form-control" type="text" name="vk_storage" value="<#VK_STORAGE#>" class="input"></div>
+	</div>
+	<div class="form-group">
+	<label class="col-lg-4 control-label"><#LANG_VK_COUNT_ROW#>
+	<span data-toggle="tooltip" data-placement="right" data-title="<#LANG_HELP_COUNTROW#>">
+	<i class="glyphicon glyphicon-info-sign text-primary"></i>
+	</label>
+	<div class="col-lg-6"><input class="form-control" type="text" name="vk_count_row" value="<#VK_COUNT_ROW#>" class="input"></div>
+	</div>
+	<div class="form-group">
+	<label class="col-lg-4 control-label"><#LANG_VK_PLAYER#></label>
+	<div class="col-lg-6">
+		<select name="vk_player" class="form-control" id="vk_player">
+			<option value="1"[#if VK_PLAYER=="1"#] selected[#endif#]>playSound</option>
+			<option value="2"[#if VK_PLAYER=="2"#] selected[#endif#]>playMedia</option>
+		</select>
+	</div>
+	</div>
+	<div class="form-group">
+	<label class="control-label"><#LANG_VK_USE_WEBHOOK#></label>
+	<div class="col-lg-6"><input type="checkbox" id="vk_webhook" name="vk_webhook" data-toggle="collapse" data-target="#webhook_settings" value="1"[#if VK_WEBHOOK="1"#] checked[#endif#]></div>
+	</div>
+	<div class='collapse [#if VK_WEBHOOK="1"#] in[#endif#]' id='webhook_settings'>
+	<div class="form-group">
+	<label class="col-lg-4 control-label"><#LANG_VK_WEBHOOK_URL#></label>
+	<div class="col-lg-6">
+	<input class="form-control" type="text" name="vk_webhook_url" value="<#WEBHOOK_URL#>" class="input">
+	</div>
+	<small class="text-muted">/webhook_vkmessenger.php</small>
+	<div class="col-lg-9">
+	<div class="col-lg-3"></div>
+	<div class="col-lg-6">
+		<button onclick="setWebHook();return false;" class="btn btn-default">
+			<i class="glyphicon glyphicon-plus-sign"></i> <#LANG_VK_WEBHOOK_SET#></button>
+		<button onclick="cleanWebHook();return false;" class="btn btn-default">
+			<i class="glyphicon glyphicon-remove-sign"></i> <#LANG_VK_WEBHOOK_CLEAN#></button>
+		<button onclick="showInfo();return false;" class="btn btn-default">
+			<i class="glyphicon glyphicon-info-sign text-primary"></i> <#LANG_VK_WEBHOOK_INFO#></button></br>
+		<div id="info"></div>
+	</div>
+	</div>
+	</div>
+	</div>
+	<div class="clearfix hidden-xs hidden-sm"></div> 
+	[#endif API_KEY#]
+	<div class="form-group">
+	<label for="title" class="col-lg-1 control-label" data-toggle="tooltip" title="Запись в отдельный лог-файл YYYY-mm-dd_vkmessenger.log">
+	Отладка  debMes:
+	</label>
+    <div class="col-lg-6"><input type="checkbox" name="log_debmes" value="1"[#if LOG_DEBMES="1"#] checked[#endif#]></div>
+    </div>
+<div class="form-actions">
+<button type="submit" name="subm" value="Submit" class="btn btn-primary"><#LANG_UPDATE#></button>
+<input type="hidden" name="view_mode" value="update_settings">
+<input type="hidden" name="mode" value="update">
+</div>
+</fieldset>
+</form>
+</div>
+
+<br/>
+<ul class="nav nav-tabs">
+ <li [#if TAB=="" || TAB=="users"#] class="active"[#endif#]><a href="?tab=users"><span class="glyphicon glyphicon-user"></span> <#LANG_MODULE_USERS#></a> </li>
+ <li [#if TAB=="cmd"#] class="active"[#endif#]><a href="?tab=cmd"><span class="glyphicon glyphicon-th"></span> <#LANG_VK_COMMANDS#></a> </li> 
+ <li [#if TAB=="events"#] class="active"[#endif#]><a href="?tab=events"><span class="glyphicon glyphicon-tasks"></span> <#LANG_VK_EVENTS#></a> </li> 
+ <li [#if TAB=="log"#] class="active"[#endif#]><a href="?tab=log"><span class="glyphicon glyphicon-list-alt"></span> <#LANG_GENERAL_EVENTS_LOG#></a> </li> 
+ <li [#if TAB=="help"#] class="active"[#endif#]><a href="?tab=help"><span class="glyphicon glyphicon-exclamation-sign"></span> <#LANG_VK_HELP#></a> </li> 
+</ul> 
+
+[#if TAB="users" || TAB==""#]
+  [#inc search_users.html#] 
+[#endif#] 
+[#if TAB="cmd"#]
+  [#inc search_cmd.html#] 
+[#endif#] 
+[#if TAB="events"#]
+  [#inc search_events.html#] 
+[#endif#] 
+[#if TAB="log"#]
+  [#inc search_log.html#] 
+[#endif#] 
+[#if TAB="help"#]
+  [#inc help.html#] 
+[#endif#] 
