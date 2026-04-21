@@ -1,0 +1,45 @@
+ <style>
+.panel_icon {
+	font-size:23px;
+}
+.text-success {
+	color:#5cb85c;
+}
+</style>
+
+ [#if VIEW_MODE="search_vkmessendger" || VIEW_MODE=""#]
+  [#inc search_admin.html#]
+ [#endif VIEW_MODE#]
+
+ [#if VIEW_MODE="user_edit"#]
+    <a class="btn btn-defaul btn-primary" href="?">&lt;&lt;&lt; <#LANG_BACK#></a>
+    <p align=center>
+    [#if ID!=""#]
+	[#if USER_ID!=""#]
+	<img src="<#ROOTHTML#>cms/cached/vkmessenger/[#USER_ID#].jpg" height="50px" onerror="this.src='<#ROOTHTML#>templates/vkmessenger/img/none.jpg'">
+	<br>
+	[#endif USER_ID#]
+    [#if NAME!=""#]<#LANG_USER#>: <strong>[#NAME#]</strong>[#endif NAME#]
+    [#endif ID#]   
+	</p>  
+    [#inc user_edit.html#]
+[#endif VIEW_MODE#]
+[#if VIEW_MODE="cmd_edit"#]
+    <a class="btn btn-defaul btn-primary" href="?tab=cmd">&lt;&lt;&lt; <#LANG_BACK#></a>
+    <p align=center>
+    [#if ID!=""#]
+        [#if TITLE!=""#]<#LANG_VK_COMMAND#>: <strong>[#TITLE#]</strong>[#endif TITLE#]
+    [#endif ID#]   
+	</p>  
+    [#inc cmd_edit.html#]
+[#endif VIEW_MODE#]
+[#if VIEW_MODE="event_edit"#]
+    <a class="btn btn-defaul btn-primary" href="?tab=events">&lt;&lt;&lt; <#LANG_BACK#></a>
+    <p align=center>
+    [#if ID!=""#]
+        [#if TITLE!=""#]<#LANG_VK_EVENT#>:<strong>[#TITLE#]</strong>[#endif TITLE#]
+    [#endif ID#]   
+    </p>  
+    [#inc event_edit.html#]
+[#endif VIEW_MODE#]
+ <!-- / table vkmessenger view -->
