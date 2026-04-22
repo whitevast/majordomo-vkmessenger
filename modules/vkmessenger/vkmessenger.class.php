@@ -1032,25 +1032,6 @@ function buildInlineKeyBoard($buttons){
 	return $this->buildKeyBoard($buttons, true);
 }
 
-function splitAtNthOccurrence($string, $substring, $n, $substron = true) {
-    $position = -1;
-    for ($i = 0; $i < $n; $i++) {
-        $position = strpos($string, $substring, $position + 1);
-        if ($position === false) {
-            return null; // Подстрока не найдена нужное количество раз
-        }
-    }
-    // Разделяем строку: до и после найденной позиции
-    $before = substr($string, 0, $position);
-	if($substrin) $after = substr($string, $position);
-    else $after = substr($string, $position + strlen($substring)); 
-    return [
-        'position' => $position,
-        'before' => $before,
-        'after' => $after
-    ];
-}
-
 function getFileUrl($url){
 	$ch = curl_init($url);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
@@ -1131,6 +1112,7 @@ function downloadFile($url, $path) {
 
 
 function sendMessage($user_id, $message = '',$keyboard='', $silent = false, $attachments = array()){
+	$format_data = '';
 	$comma = substr_count($user_id, ",");
 	if($comma > 0){
 		$user = 'peer_ids';
@@ -1140,11 +1122,21 @@ function sendMessage($user_id, $message = '',$keyboard='', $silent = false, $att
 			$this->sendMessage($positions['after'], $message, $keyboard, $silent, $attachments);
 		}
 	} else $user = 'user_id';
+	$format = $this->extractFormattedTags($message);
+	if($format){
+		$message = $format['message'];
+		$format_data = array( 'version' => 1,
+					'items' => $format['items'],
+					);
+		$format_data = json_encode($format_data);
+		$this->writeLog($format_data);
+	}
 	return $this->vkApi_call('messages.send', array(
 		$user		=> $user_id,
 		'message'	=> $message,
 		'keyboard'	=> $keyboard,
 		'silent'	=> $silent,
+		'format_data'=>$format_data,
 		'attachment'=> implode(',', $attachments),
 		'random_id'	=> 0,
 	));
@@ -1209,6 +1201,106 @@ function sendImageToAll($image, $message, $keyboard = '', $silent = false, $atta
 	return $this->sendImageTo($image, users, $message, $keyboard, $silent, $attachments);
 } 
 
+//Функции, созданные ИИ
+function splitAtNthOccurrence($string, $substring, $n, $substron = true) {
+    $position = -1;
+    for ($i = 0; $i < $n; $i++) {
+        $position = strpos($string, $substring, $position + 1);
+        if ($position === false) {
+            return null; // Подстрока не найдена нужное количество раз
+        }
+    }
+    // Разделяем строку: до и после найденной позиции
+    $before = substr($string, 0, $position);
+	if($substrin) $after = substr($string, $position);
+    else $after = substr($string, $position + strlen($substring)); 
+    return [
+        'position' => $position,
+        'before' => $before,
+        'after' => $after
+    ];
+}
+
+function extractFormattedTags($inputString) {
+    // Соответствие тегов типам форматирования
+    $tagTypes = [
+        'b' => 'bold',
+        'strong' => 'bold',
+        'i' => 'italic',
+        'em' => 'italic',
+        'u' => 'underline',
+        'a' => 'url'
+    ];
+    // Улучшенное регулярное выражение с чётким разделением групп
+    $pattern = '/
+        <(b|strong|i|em|u)>([^<]*)<\/\1>                          # Простые теги
+        |
+        <a\s+[^>]*href\s*=\s*["\']([^"\']*)["\'][^>]*>([^<]*)<\/a>  # Тег a с href
+    /ix';
+    preg_match_all($pattern, $inputString, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
+    // Если тегов не найдено, возвращаем false
+    if (empty($matches)) {
+        return false;
+    }
+    $result = [
+        'message' => '',
+        'items' => []
+    ];
+    $cleanText = '';
+    $lastPos = 0;
+    foreach ($matches as $match) {
+        $fullMatch = $match[0][0]; // Полное совпадение (весь тег с содержимым)
+        $startPos = $match[0][1];  // Позиция начала тега в исходной строке
+        // Добавляем текст перед тегом в итоговую строку
+        $textBefore = substr($inputString, $lastPos, $startPos - $lastPos);
+        $cleanText .= $textBefore;
+        $tagCode = null;
+        $innerText = '';
+        $url = null;
+        // Проверяем, какой тип тега был найден
+        if (isset($match[1]) && !empty($match[1][0])) {
+            // Простые теги: b, i, em и т. д.
+            $tagCode = $match[1][0];
+            $innerText = $match[2][0] ?? '';
+        } elseif (isset($match[3]) && !empty($match[3][0])) {
+            // Тег a (ссылка)
+            $tagCode = 'a';
+            $url = $match[3][0];
+            $innerText = $match[4][0] ?? '';
+        }
+        // Пропускаем обработку, если тег не распознан
+        if ($tagCode === null) {
+            continue;
+        }
+        // Определяем тип форматирования
+        $type = $tagTypes[$tagCode] ?? null;
+        if ($type === null) {
+            continue; // Пропускаем неизвестные теги
+        }
+        // Смещение в итоговой строке — это текущая длина cleanText
+        $offset = mb_strlen($cleanText, 'UTF-8');
+        $length = mb_strlen($innerText, 'UTF-8'); // Длина *только текста* между тегами
+        // Добавляем содержимое тега в итоговую строку
+        $cleanText .= $innerText;
+        // Формируем элемент для items
+        $item = [
+            'offset' => $offset,
+            'length' => $length,
+            'type' => $type
+        ];
+        if ($type === 'url') {
+            $item['url'] = $url;
+        }
+        $result['items'][] = $item;
+        // Обновляем последнюю обработанную позицию
+        $lastPos = $startPos + strlen($fullMatch);
+    }
+    // Добавляем оставшийся текст после последнего тега
+    $remaining = substr($inputString, $lastPos);
+    $cleanText .= $remaining;
+    $result['message'] = $cleanText;
+    return $result;
+}
 
 
 

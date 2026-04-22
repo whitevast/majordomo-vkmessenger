@@ -29,7 +29,7 @@ while (1){
 	}
 	if (!$vkmessenger_module->config['VK_WEBHOOK']){ //если вебхук не активен
 		if(isset($connect['server'])){
-			$url = $connect['server'].'?act=a_check&key='.$connect['key'].'&ts='.$connect['ts'].'&wait=20&version='.$version;
+			$url = $connect['server'].'?act=a_check&key='.$connect['key'].'&ts='.$connect['ts'].'&wait=15&version='.$version;
 			$response = json_decode(@file_get_contents($url), true);
 			if (isset($response['failed'])){
 				if($response['failed'] == 1){
@@ -54,7 +54,6 @@ while (1){
 						);
 						curl_setopt($ch, CURLOPT_NOSIGNAL, 1);
 						curl_setopt($ch, CURLOPT_TIMEOUT_MS, 100);
-			
 						$result = curl_exec($ch);
 						curl_close($ch);
 					}
