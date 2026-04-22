@@ -313,17 +313,14 @@ function admin(&$out) {
 	if ($sendMessage){
 		header("HTTP/1.0: 200 OK\n");
 		header('Content-Type: text/html; charset=utf-8');
-		$user=gr('user');
-		$text=gr('text');
-		$image = gr('image');
-		//$silent=gr('silent');
-		//if (!isset($silent)) {
-		//    $silent = NULL;
-		//}
-		if ($image!='' && file_exists($image)) {
-			$this->sendPhotoToUser($user, $image, $text);
+		$user = gr('user');
+		$text = gr('text') ?? '';
+		$image = gr('image') ?? '';
+		$silent = gr('silent') ?? '';
+		if ($image != '' && file_exists($image)) {
+			$this->sendImageToUser($user, $image, $text);
 		}
-		else if ($text!='') {
+		else if ($text != '') {
 			$this->sendMessageToUser($user, $text);
 		}
 		echo "Ok";
@@ -729,12 +726,17 @@ function usual(&$out) {
 	if ($event=='SAY') {
 		$level=$details['level'];
 		$message=$details['message'];
+		$image = $details['image'];
 		$users = SQLSelect("SELECT * FROM vk_user WHERE HISTORY=1");
-		foreach($users as $user){
-			if($level >= $user['HISTORY_LEVEL']){
-				if ($level >= $user['HISTORY_SILENT']) $silent = false;
-				else $silent = true;
-				if($users) $this->sendMessageTo($user, $message, '', $silent);
+		if($users){
+			foreach($users as $user){
+				if($level >= $user['HISTORY_LEVEL']){
+					if ($level >= $user['HISTORY_SILENT']) $silent = false;
+					else $silent = true;
+					$url=BASE_URL."/ajax/vkmessenger.html?sendMessage=1&user=".$user['USER_ID']."&text=".urlencode($message)."&image=".urlencode($image)."&silent=".$silent;
+					getURLBackground($url,0);
+					//$this->sendMessageTo($user, $message, '', $silent);
+				}
 			}
 		}
 	}
@@ -1234,18 +1236,6 @@ function vkApi_call($method, $params = array()) {
   if (!$response || !isset($response['response'])) {
     $this->log_error($json);
   } else return $response['response'];
-}
-
-function sendPhotoToUser($user_id, $photopath=false, $msg=false) {
-  $attachments = array();
-  if($photopath) {
-	  $photo = $this->uploadPhoto($user_id, $photopath);
-	  $attachments = array(
-		'photo'.$photo['owner_id'].'_'.$photo['id'],
-	  );
-  }
-  $this->sendMessageToUser($user_id, $msg, '', '', false, $attachments);
-  $this->writeLog("Фото " . $photopath . " c сообщением " . $msg . " польщователю с ID " . $user_id . " отправлено");
 }
 
 function uploadPhoto($user_id, $file_name) {
