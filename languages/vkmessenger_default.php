@@ -14,8 +14,8 @@ $dictionary=array(
 'VK_HISTORY'=>'History',
 'VK_HISTORY_LEVEL'=>'History level',
 'VK_HISTORY_SILENT'=>'History level not silent',
-'VK_COMMANDS'=>'Commands',
-'VK_COMMAND'=>'Command',
+'VK_COMMANDS'=>'Burrons',
+'VK_COMMAND'=>'Button',
 'VK_PATTERNS'=>'Patterns',
 'VK_DOWNLOAD'=>'Download',
 'VK_PLAY_VOICE'=>'Play',
@@ -77,17 +77,17 @@ $dictionary=array(
 'HELP_MEMBER'=>'Link to system user',
 'HELP_ADMIN'=>'Administrator',
 'HELP_SILENT'=>'Send silent messages',
-'HELP_HISTORY'=>'Send history to user',
-'HELP_HISTORY_LEVEL'=>'Level history to send(0 - send all history message)',
-'HELP_HISTORY_SILENT'=>'Level history to send not silent(0 - send all history message not silent)',
+'HELP_HISTORY'=>'Send system messages to user',
+'HELP_HISTORY_LEVEL'=>'Level messages to send(0 - send all messages)',
+'HELP_HISTORY_SILENT'=>'Level messages to send not silent(0 - send all messages not silent)',
 'HELP_COMMANDS'=>'Process command from user',
 'HELP_PATTERNS'=>'Process patterns from user',
 'HELP_DOWNLOAD'=>'Download files to storage from user',
 'HELP_PLAY_VOICE'=>'Play voice from user',
-'HELP_TITLE'=>'Title command (view in keyboard vk client)',
-'HELP_DESCRIPTION'=>'Description command',
-'HELP_ACCESS_CONTROL'=>'Access control command',
-'HELP_COUNTROW'=>'Count commands on row'
+'HELP_TITLE'=>'Title игеещт (view in keyboard vk client)',
+'HELP_DESCRIPTION'=>'Description игеещт',
+'HELP_ACCESS_CONTROL'=>'Access control игеещт',
+'HELP_COUNTROW'=>'Count игеещты on row'
 
 /* end module names */
 );

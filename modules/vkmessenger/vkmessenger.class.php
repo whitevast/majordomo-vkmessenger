@@ -6,6 +6,7 @@
 * @copyright http://majordomo.smartliving.ru/ (c)
 */
 //
+const DEBUG = 0;
 const V_API = "5.199";
 const CASH_PATH = ROOT . "cms/cached" . DIRECTORY_SEPARATOR . "vkmessenger" . DIRECTORY_SEPARATOR;
 
@@ -254,6 +255,7 @@ function admin(&$out) {
    if(substr($vk_storage, -1) != DIRECTORY_SEPARATOR) $vk_storage = $vk_storage . DIRECTORY_SEPARATOR;
    $this->config['VK_STORAGE'] = $vk_storage;
    $this->config['VK_COUNT_ROW'] = gr('vk_count_row');
+   if($this->config['VK_COUNT_ROW'] > 5) $this->config['VK_COUNT_ROW'] = 5;
    $this->config['VK_PLAYER'] = gr('vk_player');
    $this->config['LOG_DEBMES'] = gr('log_debmes');
    
@@ -496,10 +498,9 @@ function usual(&$out) {
 }
 
  function processMessage($data) {
-	$skip = false; //????????
+	$skip = false;
 	$this->getConfig();
-	//print_r($data);
-	//$this->writeLog($data);
+	if(DEBUG) print_r($data);
 	if($data['type'] == 'message_new'){ //обрабатываем входящее сообщение
 	$message = $data['object']['message'];
 		$user = SQLSelectOne("SELECT * FROM vk_user WHERE USER_ID LIKE '" . DBSafe($message['from_id']) . "'");
@@ -524,6 +525,10 @@ function usual(&$out) {
 						}
 						catch(Exception $e) {
 							registerError('vkmessenger', sprintf('Exception in "%s" method ' . $e->getMessage(), $text));
+						}
+						if($skip) {
+							$this->writeLog("Skip next processing events type = ".$type);
+							return;
 						}
 					}
 				}
@@ -632,10 +637,10 @@ function usual(&$out) {
                         catch(Exception $e) {
                             registerError('telegram', sprintf('Exception in "%s" method ' . $e->getMessage(), $text));
                         }
-                    }
-                    if($skip) {
-                        $this->writeLog("Skip next processing events location");
-                        break;
+						if($skip) {
+							$this->writeLog("Skip next processing events location");
+							break;
+						}
                     }
                 }
                 return; //если прислана геопозиция, то дальнейшая обработка не нужна
@@ -660,11 +665,6 @@ function usual(&$out) {
                     break;
                 }
             }
-            // пропуск дальнейшей обработки если с обработчике событий установили $skip
-            if($skip) {
-                $this->writeLog("Skip next processing message");
-                return;
-            }
         }
 		//callback кнопка
 	} else if($data['type'] == 'message_event'){
@@ -688,6 +688,11 @@ function usual(&$out) {
 			catch(Exception $e) {
 				registerError('vkmessenger', sprintf('Exception in "%s" method ' . $e->getMessage(), $text));
 			}
+			// пропуск дальнейшей обработки если с обработчике событий установили $skip (события обрабатываться не будут)
+            if($skip) {
+                $this->writeLog("Skip next processing message");
+                return;
+            }
 		}
 		// Выполним события при получении callback
 		$events = SQLSelect("SELECT * FROM vk_event WHERE TYPE_EVENT=9 and ENABLE=1;");
@@ -713,11 +718,6 @@ function usual(&$out) {
 				'event_id'=> $data['object']['event_id'],
 				'event_data'=> '',
 		));
-		// пропуск дальнейшей обработки если с обработчике событий установили $skip
-		if($skip) {
-			$this->writeLog("Skip next processing message");
-			return;
-		}
 	}
  }
  
@@ -761,7 +761,7 @@ function usual(&$out) {
 */
  function uninstall() {
   unsubscribeFromEvent($this->name, 'SAY');
-  SQLExec('DROP TABLE IF EXISTS vk_users');
+  SQLExec('DROP TABLE IF EXISTS vk_user');
   SQLExec('DROP TABLE IF EXISTS vk_cmd');
   SQLExec('DROP TABLE IF EXISTS vk_user_cmd');
   SQLExec('DROP TABLE IF EXISTS vk_event');
@@ -820,18 +820,6 @@ function usual(&$out) {
  vk_event: TYPE_EVENT int(3) unsigned NOT NULL DEFAULT '1'
  vk_event: ENABLE int(3) unsigned NOT NULL DEFAULT '0'
  vk_event: CODE text
- 
- vk_history: ID int(10) unsigned NOT NULL auto_increment
- vk_history: USER_ID varchar(25) NOT NULL DEFAULT '0'
- vk_history: CREATED datetime
- vk_history: DIRECTION int(3) unsigned NOT NULL DEFAULT '1'
- vk_history: TYPE int(3) unsigned NOT NULL DEFAULT '1'
- vk_history: MESSAGE text
- vk_history: RAW text
- 
- 
- 
- 
 EOD;
   parent::dbInstall($data);
  }
@@ -985,8 +973,19 @@ open_link
 open_app
 callback
 */
-function buildKeyBoard($buttons, $inline = true, $one_time = false){
+function buildKeyBoard($buttons, $inline = true, $one_time = false, $lines = ''){
 	$this->getConfig();
+	$buts = false;
+	if(!is_bool($one_time)){
+		$lines = $one_time;
+		$one_time = false;
+	}
+	if($lines != ''){
+		$count = iconv_strlen($lines);
+		for($i=0;$i<$count;$i++){
+			$buts[$i] = substr($lines, $i, 1);
+		}
+	}
 	$line = 0;
 	$but = 0;
 	$keyb['inline'] = $inline;
@@ -1002,9 +1001,10 @@ function buildKeyBoard($buttons, $inline = true, $one_time = false){
 		}
 		$keyb['buttons'][$line][] = $button;
 		$but++;
-		if($but == $this->config['VK_COUNT_ROW']){
+		if((!$buts and $but == $this->config['VK_COUNT_ROW']) or $but == $buts[$line]){
 			$but = 0;
 			$line++;
+			if(!isset($buts[$line])) $buts = false;
 		}
 	}
 	if(isset($twobuttons)){
@@ -1028,8 +1028,8 @@ function buildKeyBoard($buttons, $inline = true, $one_time = false){
 	return json_encode($keyb);
 }
 
-function buildInlineKeyBoard($buttons){
-	return $this->buildKeyBoard($buttons, true);
+function buildInlineKeyBoard($buttons, $lines = ''){
+	return $this->buildKeyBoard($buttons, true, false, $lines);
 }
 
 function getFileUrl($url){
