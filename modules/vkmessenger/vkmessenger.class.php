@@ -1231,75 +1231,95 @@ function extractFormattedTags($inputString) {
         'u' => 'underline',
         'a' => 'url'
     ];
-    // Улучшенное регулярное выражение с чётким разделением групп
-    $pattern = '/
-        <(b|strong|i|em|u)>([^<]*)<\/\1>                          # Простые теги
-        |
-        <a\s+[^>]*href\s*=\s*["\']([^"\']*)["\'][^>]*>([^<]*)<\/a>  # Тег a с href
-    /ix';
-    preg_match_all($pattern, $inputString, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
-    // Если тегов не найдено, возвращаем false
-    if (empty($matches)) {
+
+    // Создаём DOM-документ
+    $dom = new DOMDocument();
+
+    // Подавляем предупреждения о некорректном HTML
+    libxml_use_internal_errors(true);
+
+    // Добавляем обёртку, чтобы гарантировать наличие body
+    $html = '<div>' . mb_convert_encoding($inputString, 'HTML-ENTITIES', 'UTF-8') . '</div>';
+
+    if (!$dom->loadHTML($html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD)) {
+        libxml_clear_errors();
         return false;
     }
+
+    libxml_clear_errors();
+
+    // Находим корневой элемент (наш div)
+    $root = $dom->getElementsByTagName('div')->item(0);
+    if (!$root) {
+        return false;
+    }
+
     $result = [
         'message' => '',
         'items' => []
     ];
     $cleanText = '';
-    $lastPos = 0;
-    foreach ($matches as $match) {
-        $fullMatch = $match[0][0]; // Полное совпадение (весь тег с содержимым)
-        $startPos = $match[0][1];  // Позиция начала тега в исходной строке
-        // Добавляем текст перед тегом в итоговую строку
-        $textBefore = substr($inputString, $lastPos, $startPos - $lastPos);
-        $cleanText .= $textBefore;
-        $tagCode = null;
-        $innerText = '';
-        $url = null;
-        // Проверяем, какой тип тега был найден
-        if (isset($match[1]) && !empty($match[1][0])) {
-            // Простые теги: b, i, em и т. д.
-            $tagCode = $match[1][0];
-            $innerText = $match[2][0] ?? '';
-        } elseif (isset($match[3]) && !empty($match[3][0])) {
-            // Тег a (ссылка)
-            $tagCode = 'a';
-            $url = $match[3][0];
-            $innerText = $match[4][0] ?? '';
-        }
-        // Пропускаем обработку, если тег не распознан
-        if ($tagCode === null) {
-            continue;
-        }
-        // Определяем тип форматирования
-        $type = $tagTypes[$tagCode] ?? null;
-        if ($type === null) {
-            continue; // Пропускаем неизвестные теги
-        }
-        // Смещение в итоговой строке — это текущая длина cleanText
-        $offset = mb_strlen($cleanText, 'UTF-8');
-        $length = mb_strlen($innerText, 'UTF-8'); // Длина *только текста* между тегами
-        // Добавляем содержимое тега в итоговую строку
-        $cleanText .= $innerText;
-        // Формируем элемент для items
-        $item = [
-            'offset' => $offset,
-            'length' => $length,
-            'type' => $type
-        ];
-        if ($type === 'url') {
-            $item['url'] = $url;
-        }
-        $result['items'][] = $item;
-        // Обновляем последнюю обработанную позицию
-        $lastPos = $startPos + strlen($fullMatch);
+
+    // Рекурсивно обрабатываем узлы
+    $this->processNode($root, $cleanText, $result['items'], $tagTypes);
+
+    // Если не найдено ни одного тега с форматированием, возвращаем false
+    if (empty($result['items'])) {
+        return false;
     }
-    // Добавляем оставшийся текст после последнего тега
-    $remaining = substr($inputString, $lastPos);
-    $cleanText .= $remaining;
+
     $result['message'] = $cleanText;
     return $result;
+}
+
+function processNode($node, &$cleanText, &$items, $tagTypes, $parentOffset = 0) {
+    // Проверяем, что узел существует и имеет дочерние узлы
+    if (!$node || !$node->hasChildNodes()) {
+        return;
+    }
+
+    foreach ($node->childNodes as $child) {
+        if ($child->nodeType === XML_TEXT_NODE) {
+            // Текстовый узел — добавляем в итоговую строку
+            $text = $child->textContent;
+            $cleanText .= $text;
+        } elseif ($child->nodeType === XML_ELEMENT_NODE) {
+            $tagName = strtolower($child->nodeName);
+
+            if (isset($tagTypes[$tagName])) {
+                // Узел с форматированием
+                $type = $tagTypes[$tagName];
+                $url = null;
+
+                if ($type === 'url') {
+                    $url = $child->getAttribute('href');
+                }
+
+                // Запоминаем текущую длину cleanText как offset
+                $offset = mb_strlen($cleanText, 'UTF-8');
+
+                // Рекурсивно обрабатываем дочерние узлы этого тега
+                $this->processNode($child, $cleanText, $items, $tagTypes, $offset);
+
+                // После обработки дочерних узлов рассчитываем длину текста внутри этого тега
+                $length = mb_strlen($cleanText, 'UTF-8') - $offset;
+
+                // Добавляем элемент форматирования
+                $item = [
+                    'offset' => $offset,
+                    'length' => $length,
+                    'type' => $type
+                ];
+                if ($type === 'url') {
+                    $item['url'] = $url;
+                }
+                $items[] = $item;
+            } else {
+                // Другие теги — просто рекурсивно обрабатываем их содержимое
+                $this->processNode($child, $cleanText, $items, $tagTypes, $parentOffset);
+            }
+        }
+    }
 }
 
 
