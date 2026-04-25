@@ -388,7 +388,7 @@ function admin(&$out) {
  function export_command(&$out, $id) {
      $command=SQLSelectOne("SELECT * FROM vk_cmd WHERE ID='".(int)$id."'");
      unset($command['ID']);
-     $data=json_encode($command);
+     $data=json_encode($command, JSON_UNESCAPED_UNICODE);
      $filename="Command_VKmessenger_".urlencode($command['TITLE']).".txt";
      $this->export_file($filename,$data);
  }
@@ -406,7 +406,7 @@ function admin(&$out) {
  function export_event(&$out, $id) {
      $event=SQLSelectOne("SELECT * FROM vk_event WHERE ID='".(int)$id."'");
      unset($event['ID']);
-     $data=json_encode($event);
+     $data=json_encode($event, JSON_UNESCAPED_UNICODE);
      $filename="Event_VKmessenger_".urlencode($event['TITLE']).".txt";
      $this->export_file($filename,$data);
  }
@@ -862,6 +862,7 @@ function getKeyb($user) {
 			}
 		}
 	}
+	if(empty($button)) return '{"buttons": []}';
 	$keyb = $this->buildUserKeyBoard($button);
 	return $keyb;
 }
@@ -914,7 +915,7 @@ function buildKeyBoardButton($name, $type, $payload = "", $color = "1", $data = 
 	}
 	$arr['type'] = $type;
 	if($payload == "") $payload = $name;
-	$arr['payload'] = json_encode(array('id' => $payload, 'type' => 'button')); 
+	$arr['payload'] = json_encode(array('id' => $payload, 'type' => 'button'), JSON_UNESCAPED_UNICODE); 
 	if($type != "location" and $type != "vkpay") $arr['label'] = $name;
 	if($type == "vkpay") $arr['hash'] = $data;
 	else if($type == "open_link") $arr['link'] = $data == '' ? $payload : $data;
@@ -928,6 +929,7 @@ function buildUserKeyBoard($buttons){
 	$this->getConfig();
 	$line = 0;
 	$but = 0;
+	
 	$keyb['one_time'] = false;
 	$keyb['inline'] = false;
 	foreach($buttons as $button){
@@ -963,7 +965,7 @@ function buildUserKeyBoard($buttons){
 		$line++;
 		$keyb['buttons'][$line][0] = $this->buildKeyBoardButton($vkpay['TITLE'], $vkpay['TYPE'], '', '', $vkpay['DATA']);
 	}
-	return json_encode($keyb);
+	return json_encode($keyb, JSON_UNESCAPED_UNICODE);
 }
 /*type:
 text
@@ -1025,7 +1027,7 @@ function buildKeyBoard($buttons, $inline = true, $one_time = false, $lines = '')
 		$line++;
 		$keyb['buttons'][$line][0] = $vkpay;
 	}
-	return json_encode($keyb);
+	return json_encode($keyb, JSON_UNESCAPED_UNICODE);
 }
 
 function buildInlineKeyBoard($buttons, $lines = ''){
@@ -1128,7 +1130,7 @@ function sendMessage($user_id, $message = '',$keyboard='', $silent = false, $att
 		$format_data = array( 'version' => 1,
 					'items' => $format['items'],
 					);
-		$format_data = json_encode($format_data);
+		$format_data = json_encode($format_data, JSON_UNESCAPED_UNICODE);
 		$this->writeLog($format_data);
 	}
 	return $this->vkApi_call('messages.send', array(
@@ -1147,7 +1149,7 @@ function sendMessageTo($users, $message = '',$keyboard='', $silent = false, $att
 	foreach($users as $user) {
 		$user_id = $user['USER_ID'];
 		if($keyboard != '') {
-			if(is_array($keyboard)) $keyboard = json_encode($keyboard);
+			if(is_array($keyboard)) $keyboard = json_encode($keyboard, JSON_UNESCAPED_UNICODE);
 		} else $keyboard = $this->getKeyb($user);
 		if (!$silent) $silent = $user['SILENT'];
 		$res = $this->sendMessage($user_id, $message, $keyboard, $silent, $attachments);
@@ -1180,7 +1182,7 @@ function sendImageTo($image, $users, $message = '',$keyboard='', $silent = false
 	foreach($users as $user) {
 		$user_id = $user['USER_ID'];
 		if($keyboard != '') {
-			if(is_array($keyboard)) $keyboard = json_encode($keyboard);
+			if(is_array($keyboard)) $keyboard = json_encode($keyboard, JSON_UNESCAPED_UNICODE);
 		} else $keyboard = $this->getKeyb($user);
 		if (!$silent) $silent = $user['SILENT'];
 		$res = $this->sendMessage($user_id, $message, $keyboard, $silent, $attachments);
@@ -1334,7 +1336,7 @@ function vkApi_call($method, $params = array()) {
   $params['v'] = V_API;
   $query = http_build_query($params);
   $url = 'https://api.vk.com/method/'.$method.'?'.$query;
-  //$this->writeLog($url);
+  $this->writeLog($url);
   $curl = curl_init($url);
   curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
   $json = curl_exec($curl);
@@ -1411,7 +1413,7 @@ function vkApi_docsSave($file, $title) {
 //логи
 function log_msg($message) {
   if (is_array($message)) {
-    $message = json_encode($message);
+    $message = json_encode($message, JSON_UNESCAPED_UNICODE);
   }
   $trace = debug_backtrace();
   $function_name = isset($trace[1]) ? $trace[1]['function'] : '-';
@@ -1421,7 +1423,7 @@ function log_msg($message) {
 
 function log_error($message) {
   if (is_array($message)) {
-    $message = json_encode($message);
+    $message = json_encode($message, JSON_UNESCAPED_UNICODE);
   }
   $trace = debug_backtrace();
   $function_name = isset($trace[1]) ? $trace[1]['function'] : '-';
@@ -1431,14 +1433,14 @@ function log_error($message) {
 
 function writeLog($message) {
 	if ($this->debug) {
-		DebMes($message, $this->name);
+		DebMes($message, $this->name, JSON_UNESCAPED_UNICODE);
 	}
 }
 
 //Функции "на всякай случай"
 //отправка сообщения (без индивидуальной клавиатуры) большому количеству пользователей
 function sendMessageTos($users, $message = '',$keyboard='', $silent = false, $attachments = array()) {
-	if(is_array($keyboard)) $keyboard = json_encode($keyboard);
+	if(is_array($keyboard)) $keyboard = json_encode($keyboard, JSON_UNESCAPED_UNICODE);
 	$sids = '';
 	$ids = '';
   foreach($users as $user){

@@ -61,7 +61,7 @@ $dictionary=array(
 'VK_CMD_LOCATION'=>'location. Opens a dialog box with location information',
 'VK_CMD_VKPAY'=>'vkpay. Opens the VKPay payment window with predefined parameters',
 'VK_CMD_LINK'=>'open_link. Opens the link',
-'VK_CMD_APP'=>'open_app. Opens a mini-app or game,',
+'VK_CMD_APP'=>'open_app. Opens a mini-app or game',
 'VK_CMD_CALLBACK'=>'callback. Does not send a message, executes the code from the "Code" field',
 /* about */
 

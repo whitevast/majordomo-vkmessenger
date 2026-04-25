@@ -11,10 +11,10 @@ include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');
 $vkmessenger_module = new vkmessenger();
 $vkmessenger_module->getConfig();
 if (empty($vkmessenger_module->config['API_KEY']))
-   exit; // no devices added -- no need to run this cycle
+   exit; // no API -- no need to run this cycle
 echo date("H:i:s") . " running " . basename(__FILE__) . PHP_EOL;
 $latest_check=0;
-$checkEvery=20; // poll every 20 seconds
+$checkEvery=5;
 $token = $vkmessenger_module->config['API_KEY'];
 $groupid = $vkmessenger_module->config['GROUP_ID'];
 $version = V_API;
@@ -29,7 +29,7 @@ while (1){
 	}
 	if (!$vkmessenger_module->config['VK_WEBHOOK']){ //если вебхук не активен
 		if(isset($connect['server'])){
-			$url = $connect['server'].'?act=a_check&key='.$connect['key'].'&ts='.$connect['ts'].'&wait=15&version='.$version;
+			$url = $connect['server'].'?act=a_check&key='.$connect['key'].'&ts='.$connect['ts'].'&wait=25&version='.$version;
 			$response = json_decode(@file_get_contents($url), true);
 			if (isset($response['failed'])){
 				if($response['failed'] == 1){
@@ -41,21 +41,23 @@ while (1){
 				if(!empty($response['updates'])){
 					//print_r($response);
 					foreach ($response['updates'] as $event){
-						//$vkmessenger_module->processMessage($event);
-						$url = BASE_URL . '/webhook_vkmessenger.php';
-						$data_string = json_encode($event);
-						$ch=curl_init($url);
-						curl_setopt_array($ch, array(
-							CURLOPT_RETURNTRANSFER => true,
-							CURLOPT_POST => true,
-							CURLOPT_POSTFIELDS => $data_string,
-							CURLOPT_HEADER => true,
-							CURLOPT_HTTPHEADER => array('Content-Type:application/json', 'Content-Length: ' . strlen($data_string)))
-						);
-						curl_setopt($ch, CURLOPT_NOSIGNAL, 1);
-						curl_setopt($ch, CURLOPT_TIMEOUT_MS, 100);
-						$result = curl_exec($ch);
-						curl_close($ch);
+						if(DEBUG) $vkmessenger_module->processMessage($event);
+						else { 
+							$url = BASE_URL . '/webhook_vkmessenger.php';
+							$data_string = json_encode($event);
+							$ch=curl_init($url);
+							curl_setopt_array($ch, array(
+								CURLOPT_RETURNTRANSFER => true,
+								CURLOPT_POST => true,
+								CURLOPT_POSTFIELDS => $data_string,
+								CURLOPT_HEADER => true,
+								CURLOPT_HTTPHEADER => array('Content-Type:application/json', 'Content-Length: ' . strlen($data_string)))
+							);
+							curl_setopt($ch, CURLOPT_NOSIGNAL, 1);
+							curl_setopt($ch, CURLOPT_TIMEOUT_MS, 100);
+							$result = curl_exec($ch);
+							curl_close($ch);
+						}
 					}
 				}
 				$connect['ts'] = $response['ts'] ?? $connect['ts'];
