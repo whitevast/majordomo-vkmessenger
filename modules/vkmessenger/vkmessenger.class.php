@@ -497,6 +497,17 @@ function usual(&$out) {
  $this->admin($out);
 }
 
+function api($params) {
+    $command = $params['command'];
+    if ($command == "download"){
+		$this->downloadFile($params['url'], $params['path']);
+		$this->writeLog($params['url']);
+		$this->writeLog($params['path']);
+	}
+    //return $data;
+}
+
+
  function processMessage($data) {
 	$skip = false;
 	$this->getConfig();
@@ -539,10 +550,14 @@ function usual(&$out) {
 		}
 		if(!empty($message['attachments'])){
 			if($user['DOWNLOAD']){
-				foreach($message['attachments'] as $attachment){
+				$res = $this->vkApi_call('messages.getById', array(
+										'peer_id' => $message['peer_id'],
+										'cmids'   => $message['conversation_message_id'],
+										));
+				$attachments = $res['items'][0]['attachments'];
+				foreach($attachments as $attachment){
 					if($attachment['type'] == 'photo'){
-						$name = empty($message['text']) ? $attachment['photo']['id'] : $message['text'];
-						$name = $name . ".jpg";
+						$name = $attachment['photo']['id'] . ".jpg";
 						$url = $attachment['photo']['orig_photo']['url'];
 						$type = 2;
 					} else if($attachment['type'] == 'audio_message'){
@@ -571,7 +586,8 @@ function usual(&$out) {
 					if(!empty($name)){
 						if(!empty($this->config['VK_STORAGE'])) $file_path = $this->config['VK_STORAGE'] . $name;
 						else $file_path = CASH_PATH . $name;
-						$this->downloadFile($url, $file_path);
+						callAPI('/api/module/vkmessenger','GET',array('command'=>'download','url'=>$url,'path'=>$file_path));
+						//$this->downloadFile($url, $file_path);
 						if($type == 3 && $user['PLAY'] == 1) {
 							//проиграть голосовое сообщение
 							$this->writeLog("Play voice from " . $chat_id . " - " . $file_path);
@@ -592,7 +608,7 @@ function usual(&$out) {
 									eval($event['CODE']);
 								}
 								catch(Exception $e) {
-									registerError('telegram', sprintf('Exception in "%s" method ' . $e->getMessage(), $text));
+									registerError('vkmessenger', sprintf('Exception in "%s" method ' . $e->getMessage(), $text));
 								}
 							}
 							if($skip) {
@@ -827,10 +843,7 @@ EOD;
 
 //MY FUNCTIONS
 function getKeyb($user) {
-	$visible = true;
-	if($user['CMD'] == 0) {
-		return '{"buttons": []}';
-	} else {
+	if($user['CMD'] == 1) {
 		$button = array();
 		$sql = "SELECT * FROM vk_cmd where ACCESS=3 or ((select count(*) from vk_user_cmd where vk_cmd.ID=vk_user_cmd.CMD_ID and vk_user_cmd.USER_ID=" . $user['ID'] . ")>0 and ACCESS>0) order by vk_cmd.PRIORITY asc, vk_cmd.TITLE;";
 		$rec = SQLSelect($sql);
@@ -862,8 +875,8 @@ function getKeyb($user) {
 			}
 		}
 	}
-	if(empty($button)) return '{"buttons": []}';
-	$keyb = $this->buildUserKeyBoard($button);
+	if(empty($button)) $keyb = '{"buttons": []}';
+	else $keyb = $this->buildUserKeyBoard($button);
 	return $keyb;
 }
 /*type:
@@ -1201,7 +1214,48 @@ function sendImageToAdmin($image, $message, $keyboard = '', $silent = false, $at
 function sendImageToAll($image, $message, $keyboard = '', $silent = false, $attachments=array()) {
     $users = SQLSelect("SELECT * FROM vk_user");
 	return $this->sendImageTo($image, users, $message, $keyboard, $silent, $attachments);
-} 
+}
+
+//отправка сообщения (клавиатура формируется по первому пользователю) большому количеству пользователей
+function sendMessageTos($users, $message = '',$keyboard='', $silent = false, $attachments = array()) {
+	if(is_array($keyboard)) $keyboard = json_encode($keyboard, JSON_UNESCAPED_UNICODE);
+	$sids = '';
+	$ids = '';
+  foreach($users as $user){
+	  if($keyboard == '') $keyboard = $this->getKeyb($user);
+	  if(!silent and $user['SILENT'] == 1) $sids = $sids.$user['USER_ID'].",";
+	  else $ids = $ids.$user['USER_ID'].",";
+  }
+  if($ids != ''){
+	  $ids = rtrim($ids, ",");
+	  $this->sendMessage($ids, $message, $keyboard, $silent, $attachments);
+  }
+  if($sids != ''){
+	  $sids = rtrim($sids, ",");
+	  $this->sendMessage($sids, $message, $keyboard, true, $attachments);
+  }
+}
+
+function sendMessageToUsers($message,$keyboard='', $silent = false, $attachments = array()) {
+	$users = SQLSelect("SELECT * FROM vk_user WHERE ADMIN='0'");
+	return $this->sendMessageTos($image, $user, $message, $keyboard, $silent, $attachments);
+}
+
+function sendImageTos($image, $users, $message = '',$keyboard='', $silent = false, $attachments = array()) {
+	$this->getConfig();
+	 if($image) {
+	  $photo = $this->uploadPhoto($this->config['GROUP_ID'], $image);
+	  $attachments = array(
+		'photo'.$photo['owner_id'].'_'.$photo['id'],
+	  );
+  }
+	return sendMessageTos($users, $message, $keyboard, $silent, $attachments);
+}
+
+function sendImageToUsers($image, $message, $keyboard = '', $silent = false, $attachments=array()) {
+	$users = SQLSelect("SELECT * FROM vk_user WHERE ADMIN='1'");
+	return $this->sendImageTo($image, $users, $message, $keyboard, $silent, $attachments);
+}
 
 //Функции, созданные ИИ
 function splitAtNthOccurrence($string, $substring, $n, $substron = true) {
@@ -1336,7 +1390,7 @@ function vkApi_call($method, $params = array()) {
   $params['v'] = V_API;
   $query = http_build_query($params);
   $url = 'https://api.vk.com/method/'.$method.'?'.$query;
-  $this->writeLog($url);
+  if(DEBUG) $this->writeLog($url);
   $curl = curl_init($url);
   curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
   $json = curl_exec($curl);
@@ -1438,23 +1492,6 @@ function writeLog($message) {
 }
 
 //Функции "на всякай случай"
-//отправка сообщения (без индивидуальной клавиатуры) большому количеству пользователей
-function sendMessageTos($users, $message = '',$keyboard='', $silent = false, $attachments = array()) {
-	if(is_array($keyboard)) $keyboard = json_encode($keyboard, JSON_UNESCAPED_UNICODE);
-	$sids = '';
-	$ids = '';
-  foreach($users as $user){
-	  if(!silent and $user['SILENT'] == 1) $sids = $sids.$user['USER_ID'].",";
-	  else $ids = $ids.$user['USER_ID'].",";
-  }
-  if($ids != ''){
-	  $ids = rtrim($ids, ",");
-	  $this->sendMessage($ids, $message, $keyboard, $silent, $attachments);
-  }
-  if($sids != ''){
-	  $sids = rtrim($sids, ",");
-	  $this->sendMessage($sids, $message, $keyboard, true, $attachments);
-  }
-}
+
 
 }

@@ -199,7 +199,24 @@
         $vkmessenger_module->sendImageToAll($img, '', '', true); // без звука<br>
         </code>
 		К изображению можно добавить текстовое описание</p>
-	
+		
+		<p><b>Рассылка сообщений большому количеству пользователей</b><br>
+		Так как ВК ограничивает рассылку сообщений (не более 20 в секунду), можно воспользоваться данной функцией для массовой рассылки.<br>
+		При этом можно либо создать клавиатуру самостоятельно, либо она возьмется из настроек первого пользователя в списке.<br>
+		Таким образом можно рассылать изменения в клавиатуре (при условии, что она однотипная) всем пользователм, не являющимся администраторами.<br>
+		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
+        $vkmessenger_module = new vkmessenger();<br>
+        $vkmessenger_module->sendMessageToUsers('Продам гараж');<br>
+		$vkmessenger_module->sendMessageToUsers('Опрос', $keuboard, true); // без звука с переданной клавиатурой<br>
+        </code><br>
+		<p><b>Рассылка изображений большому количеству пользователей</b><br>
+		Аналогично массовой рассылке, только с изображением.
+		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
+		$img = '/var/www/images/trees.jpg';<br>
+        $vkmessenger_module = new vkmessenger();<br>
+        $vkmessenger_module->sendImageToUsers($img, 'Продам гараж');<br>
+		$vkmessenger_module->sendImageToUsers($img, 'Опрос', $keuboard, true); // без звука с переданной клавиатурой<br>
+        </code><br>
         <!--<p><b>Для отправки видео</b><br>
 		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
         $vkmessenger_module = new vkmessenger();<br>
