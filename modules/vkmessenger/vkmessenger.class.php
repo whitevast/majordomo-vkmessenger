@@ -503,17 +503,20 @@ function api($params) {
 		$this->downloadFile($params['url'], $params['path']);
 		$this->writeLog($params['url']);
 		$this->writeLog($params['path']);
+	} else if ($command == "getapi"){
+		$res = $this->vkApi_call($params['method'], $params['data']);
+		$this->writeLog($res);
 	}
     //return $data;
 }
 
 
- function processMessage($data) {
+ function processMessage($indata) {
 	$skip = false;
 	$this->getConfig();
-	if(DEBUG) print_r($data);
-	if($data['type'] == 'message_new'){ //обрабатываем входящее сообщение
-	$message = $data['object']['message'];
+	if(DEBUG) print_r($indata);
+	if($indata['type'] == 'message_new'){ //обрабатываем входящее сообщение
+	$message = $indata['object']['message'];
 		$user = SQLSelectOne("SELECT * FROM vk_user WHERE USER_ID LIKE '" . DBSafe($message['from_id']) . "'");
 		$user_id = $message['from_id'];
 		$chat_id = $user_id;
@@ -683,13 +686,16 @@ function api($params) {
             }
         }
 		//callback кнопка
-	} else if($data['type'] == 'message_event'){
-		$user = SQLSelectOne("SELECT * FROM vk_user WHERE USER_ID LIKE '" . DBSafe($data['object']['user_id']) . "'");
-		$user_id = $data['object']['user_id'];
+	} else if($indata['type'] == 'message_event'){
+		$user = SQLSelectOne("SELECT * FROM vk_user WHERE USER_ID LIKE '" . DBSafe($indata['object']['user_id']) . "'");
+		$user_id = $indata['object']['user_id'];
 		$chat_id = $user_id;
-		$payload = $data['object']['payload']['id'];
+		$payload = $indata['object']['payload']['id'];
 		$callback = $payload;
-		$event_id = $data['object']['event_id'];
+		$payload_data = $indata['object']['payload']['data'] ?? '';
+		$callback_data = $payload_data;
+		$event_id =  $indata['object']['event_id'];
+		$message_id = $indata['object']['conversation_message_id'] ?? '';
 		$callback_id = $event_id;
 		// Выполним код из кнопки
 		$cmd = SQLSelectOne("SELECT CODE FROM vk_cmd WHERE TITLE='$payload'");
@@ -729,9 +735,9 @@ function api($params) {
 		}
 		//чтобы кнопка не крутилась, отправляем пустой event_data
 		$this->vkApi_call('messages.sendMessageEventAnswer', array(
-				'user_id' => $data['object']['user_id'],
-				'peer_id' => $data['object']['peer_id'],
-				'event_id'=> $data['object']['event_id'],
+				'user_id' => $indata['object']['user_id'],
+				'peer_id' => $indata['object']['peer_id'],
+				'event_id'=> $indata['object']['event_id'],
 				'event_data'=> '',
 		));
 	}
@@ -978,7 +984,7 @@ function buildUserKeyBoard($buttons){
 		$line++;
 		$keyb['buttons'][$line][0] = $this->buildKeyBoardButton($vkpay['TITLE'], $vkpay['TYPE'], '', '', $vkpay['DATA']);
 	}
-	return json_encode($keyb, JSON_UNESCAPED_UNICODE);
+	return json_encode($keyb, JSON_UNESCAPED_UNICODE | JSON_NUMERIC_CHECK);
 }
 /*type:
 text
@@ -1016,7 +1022,7 @@ function buildKeyBoard($buttons, $inline = true, $one_time = false, $lines = '')
 		}
 		$keyb['buttons'][$line][] = $button;
 		$but++;
-		if((!$buts and $but == $this->config['VK_COUNT_ROW']) or $but == $buts[$line]){
+		if((!$buts and $but == $this->config['VK_COUNT_ROW']) or ($buts and $but == $buts[$line])){
 			$but = 0;
 			$line++;
 			if(!isset($buts[$line])) $buts = false;
@@ -1144,7 +1150,6 @@ function sendMessage($user_id, $message = '',$keyboard='', $silent = false, $att
 					'items' => $format['items'],
 					);
 		$format_data = json_encode($format_data, JSON_UNESCAPED_UNICODE);
-		$this->writeLog($format_data);
 	}
 	return $this->vkApi_call('messages.send', array(
 		$user		=> $user_id,
@@ -1186,12 +1191,9 @@ function sendMessageToAll($message, $keyboard = '', $silent = false, $attachment
 function sendImageTo($image, $users, $message = '',$keyboard='', $silent = false, $attachments = array()) {
 	$this->getConfig();
 	if(isset($users['ID'])) $users = [$users];
-	 if($image) {
-	  $photo = $this->uploadPhoto($this->config['GROUP_ID'], $image);
-	  $attachments = array(
-		'photo'.$photo['owner_id'].'_'.$photo['id'],
-	  );
-  }
+	if($image){
+	  $attachments = $this->attachPhoto($this->config['GROUP_ID'], $image);
+    }
 	foreach($users as $user) {
 		$user_id = $user['USER_ID'];
 		if($keyboard != '') {
@@ -1224,6 +1226,7 @@ function sendMessageTos($users, $message = '',$keyboard='', $silent = false, $at
   foreach($users as $user){
 	  if($keyboard == '') $keyboard = $this->getKeyb($user);
 	  if(!silent and $user['SILENT'] == 1) $sids = $sids.$user['USER_ID'].",";
+	  if(!silent and $user['SILENT'] == 1) $sids = $sids.$user['USER_ID'].",";
 	  else $ids = $ids.$user['USER_ID'].",";
   }
   if($ids != ''){
@@ -1243,12 +1246,9 @@ function sendMessageToUsers($message,$keyboard='', $silent = false, $attachments
 
 function sendImageTos($image, $users, $message = '',$keyboard='', $silent = false, $attachments = array()) {
 	$this->getConfig();
-	 if($image) {
-	  $photo = $this->uploadPhoto($this->config['GROUP_ID'], $image);
-	  $attachments = array(
-		'photo'.$photo['owner_id'].'_'.$photo['id'],
-	  );
-  }
+	if($image) {
+		$attachments = $this->attachPhoto($this->config['GROUP_ID'], $image);
+	}
 	return sendMessageTos($users, $message, $keyboard, $silent, $attachments);
 }
 
@@ -1256,6 +1256,56 @@ function sendImageToUsers($image, $message, $keyboard = '', $silent = false, $at
 	$users = SQLSelect("SELECT * FROM vk_user WHERE ADMIN='1'");
 	return $this->sendImageTo($image, $users, $message, $keyboard, $silent, $attachments);
 }
+
+function messageEdit($user_id, $cmid, $message = '',$keyboard='', $silent = false, $attachments = array()){
+	$format_data = '';
+	$format = $this->extractFormattedTags($message);
+	if($format){
+		$message = $format['message'];
+		$format_data = array( 'version' => 1,
+					'items' => $format['items'],
+					);
+		$format_data = json_encode($format_data, JSON_UNESCAPED_UNICODE);
+	}
+	return $this->vkApi_call('messages.edit', array(
+		'peer_id'	=> $user_id,
+		'cmid'		=> $cmid,
+		'message'	=> $message,
+		'keyboard'	=> $keyboard,
+		'silent'	=> $silent,
+		'format_data'=>$format_data,
+		'attachment'=> implode(',', $attachments),
+		'random_id'	=> 0,
+	));
+}
+function messageDelete($user_id, $event_id){
+	return $this->vkApi_call('messages.delete', array(
+		'peer_id'	=> $user_id,
+		'cmids'		=> $event_id,
+		'delete_for_all'=> true,
+	));
+}
+
+
+function sendAnswerCallbackQuery($user_id, $event_id, $text = ''){
+	return $this->vkApi_call('messages.sendMessageEventAnswer', array(
+		'user_id' => $user_id,
+		'peer_id' => $user_id,
+		'event_id'=> $event_id,
+		'event_data'=> json_encode([
+				'type' => 'show_snackbar',
+				'text' => $text,
+						]),
+		));
+}
+
+function sendAction($user_id, $type = 'typing'){
+	return $this->vkApi_call('messages.setActivity', array(
+		'user_id' => $user_id,
+		'type'=> $type,
+		));
+}
+ 
 
 //Функции, созданные ИИ
 function splitAtNthOccurrence($string, $substring, $n, $substron = true) {
@@ -1411,6 +1461,13 @@ function uploadPhoto($user_id, $file_name) {
   $upload_response = $this->vkApi_upload($upload_server_response['upload_url'], $file_name);
   $save_response = $this->vkApi_photosSaveMessagesPhoto($upload_response['photo'], $upload_response['server'], $upload_response['hash']);
   return array_pop($save_response);
+}
+
+function attachPhoto($id, $image){
+	  $photo = $this->uploadPhoto($id, $image);
+	  return array(
+		'photo'.$photo['owner_id'].'_'.$photo['id'],
+	  );
 }
 
 function vkApi_photosGetMessagesUploadServer($peer_id) {

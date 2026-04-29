@@ -73,11 +73,14 @@
 		Если поле кода не пустое, то выполняется только код-->
 		При нажатии на кнопку в клиенте выполняется код из поля код</br>
 		Для отправки ответа на команду в конце кода должен быть <b>return</b> с текстовым сообщением.</br>
-		Можно сформировать в коде клавиатуру с помощью функций buildKeyBoardButton() и buildInlineKeyBoard(). Имя переменной клавиатуры должно быть $keyboard. В таком случае, клавиатура будет передана с сообщением <b>return</b></br>
-		<!--Кроме этого можно отправлять <a href="http://apps.timwhitlock.info/emoji/tables/unicode" target="_blank">emoji</a>.
+		Можно сформировать в коде клавиатуру согласно разделу "Формирование клавиатуры". Имя переменной клавиатуры должно быть $keyboard. В таком случае, клавиатура будет передана с сообщением <b>return</b></br>
+		Кроме этого можно отправлять <a href="http://apps.timwhitlock.info/emoji/tables/unicode" target="_blank">emoji</a>.
 		<code style="display:block">
-		$emoji = json_decode('"'.'\ud83d\udca1'.'"');
-		return $emoji;</code></br>-->
+		$emoji = json_decode('"'.'\ud83d\ude01'.'"');<br>
+		return $emoji;</br>
+		или<br>
+		$emoji = hex2bin('3DD801DE');<br>
+		return $emoji;</code></br>
 		В коде команды через переменную <b>$user_id</b> можно узнать ID пользователя нажавшего кнопку.</br>
 		<code style="display:block">return "Ваш UserID - ".$user_id; </code>
 		</div>
@@ -122,6 +125,7 @@
 		</div>
 		Параметры начиная с $payload необязательны для заполнения.<br>
 		Формируем таким образом необходимое количество кнопок.<br>
+		Для всех, без исключения клавиатур, кроме особых случаев, я рекомендую использовать callback, а не text кнопки.<br>
 		<pre>
 		$buttons[] = $this->buildKeyBoardButton('Кнопка 1', 'text', '', 'secondary);
 		$buttons[] = $this->buildKeyBoardButton('Кнопка 2', 'location');
@@ -146,7 +150,11 @@
 		<pre>
 		$keyboard = $this->buildKeyBoard($buttons, true);
 		$this->sendMessageToUser($user_id, 'Клавиатура для Вас', $keyboard);</pre>
-		Нужно иметь ввиду, что не-inline клавиатура будет заменена сформированной в модуле клавиатурой при отправке следующего сообщения.
+		Нужно иметь ввиду, что не-inline клавиатура будет заменена сформированной в модуле клавиатурой при отправке следующего сообщения.<br>
+		Также, есть функции для изменения и удаления сообщения. С помощью них можно делать клавиатуры интерактивными.<br>
+		<strong>messageEdit($user_id, $message_id, $message, $keyboard, $silent, $attachments)</strong>;<br>
+		Параметры аналогичны sendMessage, кроме $message_id - этот id прилетает в обработку <strong>callback</strong>.<br>
+		<strong>messageDelete($user_id, $message_id)</strong>.<br>
 		</div>
 		</div>
 	</div>
@@ -200,6 +208,24 @@
         </code>
 		К изображению можно добавить текстовое описание</p>
 		
+		<p><b>Для отправки статуса действия</b><br>
+		Применяется для отображения действия, которое выполняется на стороне бота(для долго выполняемых скриптов)<br>
+		Параметры функции <u>sendAction($chat_id, $action)</u></br>
+		<u>$chat_id - идентификатор чата</u><br>
+		<u>$action - действие</u>
+		<ul><li>typing - печатает... (параметр по-умолчанию)</li>
+		<li>photo - загрузка фото</li>
+		<li>videomessage - загрузка видео</li>
+		<li>audiomessage - загрузка аудио</li>
+		<li>file - загрузка файла</li></ul>
+		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
+		$vkmessenger_module = new vkmessenger();<br>
+		$vkmessenger_module->sendAction($chat_id,"photo");<br>
+		///<br>
+		...........<br>
+		///<br>
+		$vkmessenger_module->sendMessage($chat_id,$message); </code></p><br>
+		
 		<p><b>Рассылка сообщений большому количеству пользователей</b><br>
 		Так как ВК ограничивает рассылку сообщений (не более 20 в секунду), можно воспользоваться данной функцией для массовой рассылки.<br>
 		При этом можно либо создать клавиатуру самостоятельно, либо она возьмется из настроек первого пользователя в списке.<br>
@@ -209,6 +235,7 @@
         $vkmessenger_module->sendMessageToUsers('Продам гараж');<br>
 		$vkmessenger_module->sendMessageToUsers('Опрос', $keuboard, true); // без звука с переданной клавиатурой<br>
         </code><br>
+		
 		<p><b>Рассылка изображений большому количеству пользователей</b><br>
 		Аналогично массовой рассылке, только с изображением.
 		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
@@ -261,25 +288,6 @@
 		$vkmessenger_module->sendVenueToAdmin(58.5876084, 49.6533398, 'Venue', '');<br>
 		$vkmessenger_module->sendVenueToAll(58.5876084, 49.6533398, 'Venue', 'Address'); </code></p>
 		
-		<p><b>Для отправки статуса действия</b><br>
-		Применяется для отображения действия, которое выполняется на стороне бота(для долго выполняемых скриптов)<br>
-		Параметры функции <u>sendAction($chat_id,$action)</u></br>
-		<u>$chat_id - идентификатор чата</u><br>
-		<u>$action - действие</u>
-		<ul><li>typing - печатает...</li>
-		<li>upload_photo - загрузка фото</li>
-		<li>record_video or upload_video - загрузка видео</li>
-		<li>record_audio or upload_audio - загрузка аудио</li>
-		<li>upload_document - загрузка документа</li>
-		<li>find_location - поиск местоположения</li></ul>
-		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
-		$vkmessenger_module = new vkmessenger();<br>
-		$vkmessenger_module->sendAction($chat_id,"typing");<br>
-		///<br>
-		...........<br>
-		///<br>
-		$vkmessenger_module->sendMessage($chat_id,$message); </code></p>
-		
         <p><b>Поддержка всплывающих сообщений (answerCallbackQuery)</b><br>
         Применяется для отображения ответа на callback запрос в виде всплывающего уведомления<br>
         Параметры функции <b>sendAnswerCallbackQuery($callback_id, $text, $show_alert = false )</b></br>
@@ -298,3 +306,7 @@
 		</div>
 	</div>
 </div>
+<!--
+Пусть пока лежит здесь
+https://vkhost.github.io/
+-->

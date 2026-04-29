@@ -19,7 +19,7 @@ $token = $vkmessenger_module->config['API_KEY'];
 $groupid = $vkmessenger_module->config['GROUP_ID'];
 $version = V_API;
 if(!$vkmessenger_module->config['VK_WEBHOOK']) $connect = $vkmessenger_module->vkApi_call('groups.getLongPollServer');
-$vkmessenger_module->usersUpdate(true);
+if(!DEBUG) $vkmessenger_module->usersUpdate(true);
 echo 'Start vkmessenger cycle' . PHP_EOL;
 
 while (1){
