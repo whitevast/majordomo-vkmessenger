@@ -226,6 +226,7 @@ function admin(&$out) {
 			'message_typing_state' => 1,
 			'message_read' => 1,
 			'message_edit' => 1,
+			'message_reaction_event' => 1,
 			'photo_new' => 1,
 	  ));
 	  $this->vkApi_call('groups.setLongPollSettings', array( //отключаем LongPoll
@@ -269,6 +270,7 @@ function admin(&$out) {
 			'message_typing_state' => 1,
 			'message_read' => 1,
 			'message_edit' => 1,
+			'message_reaction_event' => 1,
 			'photo_new' => 1,
 		));
 		$managers = $this->vkApi_call('groups.getMembers', array(
@@ -389,7 +391,7 @@ function admin(&$out) {
      $command=SQLSelectOne("SELECT * FROM vk_cmd WHERE ID='".(int)$id."'");
      unset($command['ID']);
      $data=json_encode($command, JSON_UNESCAPED_UNICODE);
-     $filename="Command_VKmessenger_".urlencode($command['TITLE']).".txt";
+     $filename="Button_VKmessenger_".urlencode($command['TITLE']).".txt";
      $this->export_file($filename,$data);
  }
  function import_command(&$out) {
@@ -587,10 +589,11 @@ function api($params) {
 						$type = 7;
 					}
 					if(!empty($name)){
-						if(!empty($this->config['VK_STORAGE'])) $file_path = $this->config['VK_STORAGE'] . $name;
-						else $file_path = CASH_PATH . $name;
+						if(!empty($this->config['VK_STORAGE'])) $file_path = $this->config['VK_STORAGE'] . date('Y-m-d');
+						else $file_path = CASH_PATH . date('Y-m-d');
+						if(!is_dir($file_path)) mkdir($file_path, 0777, true);
+						$file_path .= DIRECTORY_SEPARATOR . $name;
 						callAPI('/api/module/vkmessenger','GET',array('command'=>'download','url'=>$url,'path'=>$file_path));
-						//$this->downloadFile($url, $file_path);
 						if($type == 3 && $user['PLAY'] == 1) {
 							//проиграть голосовое сообщение
 							$this->writeLog("Play voice from " . $chat_id . " - " . $file_path);
@@ -654,7 +657,7 @@ function api($params) {
                             eval($event['CODE']);
                         }
                         catch(Exception $e) {
-                            registerError('telegram', sprintf('Exception in "%s" method ' . $e->getMessage(), $text));
+                            registerError('vkmessenger', sprintf('Exception in "%s" method ' . $e->getMessage(), $text));
                         }
 						if($skip) {
 							$this->writeLog("Skip next processing events location");
@@ -690,15 +693,14 @@ function api($params) {
 		$user = SQLSelectOne("SELECT * FROM vk_user WHERE USER_ID LIKE '" . DBSafe($indata['object']['user_id']) . "'");
 		$user_id = $indata['object']['user_id'];
 		$chat_id = $user_id;
-		$payload = $indata['object']['payload']['id'];
+		$id = $indata['object']['payload']['id'] ?? '';
+		$payload = $indata['object']['payload']['data'] ?? '';
 		$callback = $payload;
-		$payload_data = $indata['object']['payload']['data'] ?? '';
-		$callback_data = $payload_data;
 		$event_id =  $indata['object']['event_id'];
 		$message_id = $indata['object']['conversation_message_id'] ?? '';
 		$callback_id = $event_id;
 		// Выполним код из кнопки
-		$cmd = SQLSelectOne("SELECT CODE FROM vk_cmd WHERE TITLE='$payload'");
+		$cmd = SQLSelectOne("SELECT CODE FROM vk_cmd WHERE TITLE='$id'");
 		if(!empty($cmd['CODE'])){
 			try {
 				$success = eval($cmd['CODE']);
@@ -933,8 +935,9 @@ function buildKeyBoardButton($name, $type, $payload = "", $color = "1", $data = 
 		}
 	}
 	$arr['type'] = $type;
-	if($payload == "") $payload = $name;
-	$arr['payload'] = json_encode(array('id' => $payload, 'type' => 'button'), JSON_UNESCAPED_UNICODE); 
+	if($payload == '') $payload = $name;
+	$arr['payload'] = array('id' => $name, 'type' => 'button', 'data' => $payload);
+	if($type == "text") $arr['payload'] = json_encode($arr['payload'], JSON_UNESCAPED_UNICODE | JSON_NUMERIC_CHECK);
 	if($type != "location" and $type != "vkpay") $arr['label'] = $name;
 	if($type == "vkpay") $arr['hash'] = $data;
 	else if($type == "open_link") $arr['link'] = $data == '' ? $payload : $data;
@@ -948,7 +951,6 @@ function buildUserKeyBoard($buttons){
 	$this->getConfig();
 	$line = 0;
 	$but = 0;
-	
 	$keyb['one_time'] = false;
 	$keyb['inline'] = false;
 	foreach($buttons as $button){
@@ -959,7 +961,8 @@ function buildUserKeyBoard($buttons){
 			$vkpay = $button;
 			continue;
 		}
-		$keyb['buttons'][$line][] = $this->buildKeyBoardButton($button['TITLE'], $button['TYPE'], '', $button['COLOR'], $button['DATA'], '');
+		$payload = '';
+		$keyb['buttons'][$line][] = $this->buildKeyBoardButton($button['TITLE'], $button['TYPE'], $button['DATA'], $button['COLOR'], $button['DATA'], '');
 		$but++;
 		if($but == $this->config['VK_COUNT_ROW']){
 			$but = 0;
@@ -1046,6 +1049,7 @@ function buildKeyBoard($buttons, $inline = true, $one_time = false, $lines = '')
 		$line++;
 		$keyb['buttons'][$line][0] = $vkpay;
 	}
+	if(DEBUG) $this->writeLog($keyb);
 	return json_encode($keyb, JSON_UNESCAPED_UNICODE);
 }
 
@@ -1115,6 +1119,9 @@ function usersUpdate($forced = false){
 			$this->downloadFile($vkuser['photo_max'], $file_path);
 		}
 	}
+	$group = $this->vkApi_call('groups.getById');
+	$group = $group['groups'][0];
+	$this->downloadFile($group['photo_200'], CASH_PATH . $group['id'] . ".jpg");
 }
 
 function downloadFile($url, $path) {
@@ -1217,6 +1224,69 @@ function sendImageToAll($image, $message, $keyboard = '', $silent = false, $atta
     $users = SQLSelect("SELECT * FROM vk_user");
 	return $this->sendImageTo($image, users, $message, $keyboard, $silent, $attachments);
 }
+
+function sendFileTo($file, $users, $message = '',$keyboard='', $silent = false, $attachments = array()) {
+	if(isset($users['ID'])) $users = [$users];
+	if(!$file){
+		$this->writeLog('Файл отсутствует');
+		return false;
+    }
+	foreach($users as $user) {
+		$user_id = $user['USER_ID'];
+		$attachments = $this->attachFile($user_id, $file);
+		if($keyboard != '') {
+			if(is_array($keyboard)) $keyboard = json_encode($keyboard, JSON_UNESCAPED_UNICODE);
+		} else $keyboard = $this->getKeyb($user);
+		if (!$silent) $silent = $user['SILENT'];
+		$res = $this->sendMessage($user_id, $message, $keyboard, $silent, $attachments);
+	}
+	return $res;
+}
+
+function sendFileToUser($user_id, $file, $message = '',$keyboard='', $silent = false, $attachments = array()) {
+	$user = SQLSelect("SELECT * FROM vk_user WHERE USER_ID='".$user_id."'");
+	return $this->sendFileTo($file, $user, $message, $keyboard, $silent, $attachments);
+}
+function sendFileToAdmin($file, $message, $keyboard = '', $silent = false, $attachments=array()) {
+	$users = SQLSelect("SELECT * FROM vk_user WHERE ADMIN='1'");
+	return $this->sendFileTo($file, $users, $message, $keyboard, $silent, $attachments);
+}
+function sendFileToAll($file, $message, $keyboard = '', $silent = false, $attachments=array()) {
+    $users = SQLSelect("SELECT * FROM vk_user");
+	return $this->sendFileTo($file, users, $message, $keyboard, $silent, $attachments);
+}
+
+function sendVoiceTo($voice, $users, $message = '',$keyboard='', $silent = false, $attachments = array()) {
+	if(isset($users['ID'])) $users = [$users];
+	if(!$voice){
+		$this->writeLog('Файл отсутствует');
+		return false;
+    }
+	foreach($users as $user) {
+		$user_id = $user['USER_ID'];
+		$attachments = $this->attachVoice($user_id, $voice);
+		if($keyboard != '') {
+			if(is_array($keyboard)) $keyboard = json_encode($keyboard, JSON_UNESCAPED_UNICODE);
+		} else $keyboard = $this->getKeyb($user);
+		if (!$silent) $silent = $user['SILENT'];
+		$res = $this->sendMessage($user_id, $message, $keyboard, $silent, $attachments);
+	}
+	return $res;
+}
+
+function sendVoiceToUser($user_id, $voice, $message = '',$keyboard='', $silent = false, $attachments = array()) {
+	$user = SQLSelect("SELECT * FROM vk_user WHERE USER_ID='".$user_id."'");
+	return $this->sendVoiceTo($voice, $user, $message, $keyboard, $silent, $attachments);
+}
+function sendVoiceToAdmin($voice, $message, $keyboard = '', $silent = false, $attachments=array()) {
+	$users = SQLSelect("SELECT * FROM vk_user WHERE ADMIN='1'");
+	return $this->sendVoiceTo($voice, $users, $message, $keyboard, $silent, $attachments);
+}
+function sendVoiceToAll($voice, $message, $keyboard = '', $silent = false, $attachments=array()) {
+    $users = SQLSelect("SELECT * FROM vk_user");
+	return $this->sendVoiceTo($voice, users, $message, $keyboard, $silent, $attachments);
+}
+
 
 //отправка сообщения (клавиатура формируется по первому пользователю) большому количеству пользователей
 function sendMessageTos($users, $message = '',$keyboard='', $silent = false, $attachments = array()) {
@@ -1440,7 +1510,7 @@ function vkApi_call($method, $params = array()) {
   $params['v'] = V_API;
   $query = http_build_query($params);
   $url = 'https://api.vk.com/method/'.$method.'?'.$query;
-  if(DEBUG) $this->writeLog($url);
+  if(DEBUG) $this->writeLog($params);
   $curl = curl_init($url);
   curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
   $json = curl_exec($curl);
@@ -1464,10 +1534,10 @@ function uploadPhoto($user_id, $file_name) {
 }
 
 function attachPhoto($id, $image){
-	  $photo = $this->uploadPhoto($id, $image);
-	  return array(
+	$photo = $this->uploadPhoto($id, $image);
+	return array(
 		'photo'.$photo['owner_id'].'_'.$photo['id'],
-	  );
+	);
 }
 
 function vkApi_photosGetMessagesUploadServer($peer_id) {
@@ -1499,13 +1569,37 @@ function vkApi_photosSaveMessagesPhoto($photo, $server, $hash) {
   ));
 }
 
-// Загрузка голосового сообщения от бота (OGG)
+// Загрузка файла
+function attachFile($id, $file){
+	$file = $this->uploadFile($id, $file);
+	return array(
+		'doc'.$file['owner_id'].'_'.$file['id'],
+	);
+}
+
+function uploadFile($user_id, $file_name) {
+  $upload_server_response = $this->vkApi_docsGetMessagesUploadServer($user_id, 'doc');
+  $upload_response = $this->vkApi_upload($upload_server_response['upload_url'], $file_name);
+  $save_response = $this->vkApi_docsSave($upload_response['file']);
+  return array_pop($save_response);
+}
+
+// Загрузка голосового сообщения от бота (OGG, OPUS)
+function attachVoice($id, $file){
+	$file = $this->uploadVoiceMessage($id, $file);
+	return array(
+		'audio_message'.$file['owner_id'].'_'.$file['id'],
+	);
+}
+
 function uploadVoiceMessage($user_id, $file_name) {
   $upload_server_response = $this->vkApi_docsGetMessagesUploadServer($user_id, 'audio_message');
   $upload_response = $this->vkApi_upload($upload_server_response['upload_url'], $file_name);
   $save_response = $this->vkApi_docsSave($upload_response['file'], 'Voice message');
   return array_pop($save_response);
 }
+
+
 function vkApi_docsGetMessagesUploadServer($peer_id, $type) {
   return $this->vkApi_call('docs.getMessagesUploadServer', array(
     'peer_id' => $peer_id,
@@ -1513,13 +1607,19 @@ function vkApi_docsGetMessagesUploadServer($peer_id, $type) {
   ));
 }
 
-function vkApi_docsSave($file, $title) {
+function vkApi_docsSave($file, $title = '') {
   return $this->vkApi_call('docs.save', array(
     'file'  => $file,
     'title' => $title,
   ));
 }
 
+function vkApi_videoGetMessagesUploadServer($peer_id, $type) {
+  return $this->vkApi_call('docs.getMessagesUploadServer', array(
+    'peer_id' => $peer_id,
+    'type'    => $type,
+  ));
+}
 
 //логи
 function log_msg($message) {

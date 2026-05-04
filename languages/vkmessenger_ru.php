@@ -14,7 +14,8 @@ $dictionary=array(
 'VK_HISTORY'=>'История',
 'VK_HISTORY_LEVEL'=>'Приоритет истории',
 'VK_HISTORY_SILENT'=>'Приоритет истории сo звуком',
-'VK_COMMANDS'=>'Кнопки',
+'VK_COMMANDS'=>'Команды',
+'VK_BUTTONS'=>'Кнопки',
 'VK_COMMAND'=>'Команда',
 'VK_PATTERNS'=>'Шаблоны',
 'VK_DOWNLOAD'=>'Загрузка',
@@ -63,6 +64,7 @@ $dictionary=array(
 'VK_CMD_LINK'=>'open_link. Открывает ссылку',
 'VK_CMD_APP'=>'open_app. Открывает мини-приложение или игру',
 'VK_CMD_CALLBACK'=>'callback. Не отправляет сообщение, выполняет код из поля "Код"',
+'VK_CMD_PAYLOAD'=>'Полезные данные',
 /* about */
 
 /* help */
@@ -88,6 +90,7 @@ $dictionary=array(
 'HELP_DESCRIPTION'=>'Описание кнопки',
 'HELP_ACCESS_CONTROL'=>'Ограничение доступа к кнопке',
 'HELP_COUNTROW'=>'Количество кнопок в одной строке на клавиатуре в VK клиенте',
+'HELP_PAYLOAD'=>'Если в данном поле есть данные, код из поля Код выполнятся не будет. Необходимо обрабатывать кнопку в событиях callback.',
 
 /* end module names */
 );

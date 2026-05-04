@@ -108,11 +108,15 @@ function OnChangeType(selectedValue) {
 
   if (selectedValue === '1' || selectedValue === '2' || selectedValue === '3' || selectedValue === '4') {
 	codeField.style.display = 'none';
-    if (selectedValue != '1') dataField.style.display = 'block';
   } else {
 	codeField.style.display = 'block';
-    if (selectedValue != '1') dataField.style.display = 'none';
   }
+  if (selectedValue != '0' && selectedValue != '1') {
+	dataField.style.display = 'block';
+  } else {
+	dataField.style.display = 'none';
+  }
+  
   if (selectedValue === '0' || selectedValue === '5') {
 	colorField.style.display = 'block';
   } else {
@@ -278,9 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
                  <input type="text" class="form-control" name="condition_value_new" size="10" value="[#CONDITION_VALUE#]">
         </div>
         </div>
-  
-   
-  </div> 
+ </div> 
   
   [#module name="linkedobject" object_field="linked_object_new" property_field="linked_property_new"#] 
 

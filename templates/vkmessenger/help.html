@@ -48,12 +48,12 @@
 		<td><b>Тип кнопки</br></td>
 		<td><b>Описание</br></td>
 		</tr>
-		<tr><td><strong>text</strong></td><td>Отправляет сообщение со своим именем. Имеет поле Код. Также можно отлавливать в событии, как текстовое сообщение. Если в Коде задать<b>$skip=true;</b>, обработка событий выполнятся не будет.</td></tr>
+		<tr><td><strong>text</strong></td><td>Отправляет сообщение со своим именем. Имеет поле "Код". Также можно отлавливать в событии, как текстовое сообщение. Если в "Коде" задать<b>$skip=true;</b>, обработка событий выполнятся не будет.</td></tr>
         <tr><td><strong>location</strong></td><td>Используется для отправки местоположения. Нажатие можно отловить в событии "Местоположение". Также, если отправитель привязан к пользователю системы, передаёт координаты в модуль GPS трекер</td></tr>
         <tr><td><strong>vkpay</strong></td><td>Открывает окно оплаты VK Pay с предопределёнными параметрами. Параметры задаются в поле "Данные" в виде строки, содержащей параметры платежа VK Pay и идентификатор приложения в параметре aid, отделённый &. Пример: <i>action=transfer-to-group&group_id=1&aid=10</i>.</td></tr>
 		<tr><td><strong>open_link</strong></td><td>Открывает ссылку, указанную в поле "Данные"</td></tr>
 		<tr><td><strong>open_app</strong></td><td>Открывает мини-приложение или игру, идентификатор которой указан в поле "Данные"</td></tr>
-		<tr><td><strong>callback</strong></td><td>Не отправляет сообщение, но отправляет факт нажатия на сервер. Имеет поле Код. События именно этого типа кнопок отлавливаются в событии callback. В данном случае $callback (или $payload) = Имя кнопки</td></tr>
+		<tr><td><strong>callback</strong></td><td>Не отправляет сообщение, но отправляет факт нажатия на сервер. Имеет поле "Код". События именно этого типа кнопок отлавливаются в событии callback. Также имеет поле "Данные". Строка, записанная в это поле, будет передана в качестве полезной нагрузки в callback. Если пусто -  $callback (или $payload) = Имя кнопки</td></tr>
 		</table>
 		</div>
 		Для типов text и callback можно выбрать цвет.</br>
@@ -74,11 +74,9 @@
 		При нажатии на кнопку в клиенте выполняется код из поля код</br>
 		Для отправки ответа на команду в конце кода должен быть <b>return</b> с текстовым сообщением.</br>
 		Можно сформировать в коде клавиатуру согласно разделу "Формирование клавиатуры". Имя переменной клавиатуры должно быть $keyboard. В таком случае, клавиатура будет передана с сообщением <b>return</b></br>
-		Кроме этого можно отправлять <a href="http://apps.timwhitlock.info/emoji/tables/unicode" target="_blank">emoji</a>.
+		Кроме этого можно отправлять <a href="https://symbl.cc/ru/" target="_blank">emoji</a>.</br>
+		Выбираем нужный смайл. и в разделе "Кодировка", копируем hex UTF-8, убираем пробелы и вставляем в функцию hex2bin().</br>
 		<code style="display:block">
-		$emoji = json_decode('"'.'\ud83d\ude01'.'"');<br>
-		return $emoji;</br>
-		или<br>
 		$emoji = hex2bin('3DD801DE');<br>
 		return $emoji;</code></br>
 		В коде команды через переменную <b>$user_id</b> можно узнать ID пользователя нажавшего кнопку.</br>
@@ -244,14 +242,7 @@
         $vkmessenger_module->sendImageToUsers($img, 'Продам гараж');<br>
 		$vkmessenger_module->sendImageToUsers($img, 'Опрос', $keuboard, true); // без звука с переданной клавиатурой<br>
         </code><br>
-        <!--<p><b>Для отправки видео</b><br>
-		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
-        $vkmessenger_module = new vkmessenger();<br>
-        $vkmessenger_module->sendVideoToUser(139809588, '/var/www/files/file.mp4', 'Description');<br>
-        $vkmessenger_module->sendVideoToAdmin('/var/www/files/file.mp4');<br>
-        $vkmessenger_module->sendVideoToAll('/var/www/files/file.mp4');</code>
-		К видео можно добавить текстовое описание</p>
-	
+		
 		<p><b>Для отправки файлов</b><br>
 		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
 		$vkmessenger_module = new vkmessenger();<br>
@@ -259,12 +250,20 @@
 		$vkmessenger_module->sendFileToAdmin('/var/www/file.txt');<br>
 		$vkmessenger_module->sendFileToAll('/var/www/file.txt');</code></p>
 		
-		<p><b>Для отправки голосового сообщения</b><br>
+		<p><b>Для отправки голосового сообщения (формат OGG, OPUS)</b><br>
 		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
 		$vkmessenger_module = new vkmessenger();<br>
 		$vkmessenger_module->sendVoiceToUser(139809588, $file_path);<br>
 		$vkmessenger_module->sendVoiceToAdmin($file_path);<br>
 		$vkmessenger_module->sendVoiceToAll($file_path);</code></p>
+
+        <!--<p><b>Для отправки видео</b><br>
+		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
+        $vkmessenger_module = new vkmessenger();<br>
+        $vkmessenger_module->sendVideoToUser(139809588, '/var/www/files/file.mp4', 'Description');<br>
+        $vkmessenger_module->sendVideoToAdmin('/var/www/files/file.mp4');<br>
+        $vkmessenger_module->sendVideoToAll('/var/www/files/file.mp4');</code>
+		К видео можно добавить текстовое описание</p>
 
 		<p><b>Для отправки стикеров</b><br>
 		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
@@ -287,15 +286,16 @@
 		$vkmessenger_module->sendVenueToUser(139809588, 58.5876084, 49.6533398,'Venue', 'Address');<br>
 		$vkmessenger_module->sendVenueToAdmin(58.5876084, 49.6533398, 'Venue', '');<br>
 		$vkmessenger_module->sendVenueToAll(58.5876084, 49.6533398, 'Venue', 'Address'); </code></p>
+		-->
 		
         <p><b>Поддержка всплывающих сообщений (answerCallbackQuery)</b><br>
         Применяется для отображения ответа на callback запрос в виде всплывающего уведомления<br>
-        Параметры функции <b>sendAnswerCallbackQuery($callback_id, $text, $show_alert = false )</b></br>
+        Параметры функции <b>sendAnswerCallbackQuery($user_id, $callback_id, $text)</b></br>
+		<b>$user_id</b> - идентификатор пользователя</br>
         <b>$callback_id</b> - идентификатор callback запроса</br>
         <b>$text</b> - текст оповещения</br>
-        <b>$show_alert</b> : false - всплывающее уведомление (закрывается само); true - всплывающее уведомление требующее подтверждения (с кнопкой OK)
 		</p>
-		-->
+		</br>
 		Текст может содержать HTML разметку для форматирования текста. Поддерживаются следующие теги, в том числе вложенные:
 		<pre>
 		&lt;b&gt;жирный&lt;/b&gt;, &lt;strong&gt;жирный&lt;/strong&gt;
