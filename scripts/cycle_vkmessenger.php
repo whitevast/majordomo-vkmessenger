@@ -15,8 +15,6 @@ if (empty($vkmessenger_module->config['API_KEY']))
 echo date("H:i:s") . " running " . basename(__FILE__) . PHP_EOL;
 $latest_check=0;
 $checkEvery=5;
-$token = $vkmessenger_module->config['API_KEY'];
-$groupid = $vkmessenger_module->config['GROUP_ID'];
 $version = V_API;
 if(!$vkmessenger_module->config['VK_WEBHOOK']) $connect = $vkmessenger_module->vkApi_call('groups.getLongPollServer');
 if(!DEBUG) $vkmessenger_module->usersUpdate(true);
@@ -27,10 +25,17 @@ while (1){
 		setGlobal((str_replace('.php', '', basename(__FILE__))) . 'Run', time(), 1);
 		$latest_check=time();
 	}
+	$vkmessenger_module->resendData();
 	if (!$vkmessenger_module->config['VK_WEBHOOK']){ //если вебхук не активен
 		if(isset($connect['server'])){
 			$url = $connect['server'].'?act=a_check&key='.$connect['key'].'&ts='.$connect['ts'].'&wait=25&version='.$version;
-			$response = json_decode(@file_get_contents($url), true);
+			$curl = curl_init($url);
+			curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($curl, CURLOPT_TIMEOUT, 25);
+			$response = json_decode(curl_exec($curl), true);
+			$error = curl_error($curl);
+			curl_close($curl);
+			if ($error) continue;
 			if (isset($response['failed'])){
 				if($response['failed'] == 1){
 					$connect['ts'] = $response['ts'];
@@ -39,7 +44,6 @@ while (1){
 				}   
 			} else {
 				if(!empty($response['updates'])){
-					//print_r($response);
 					foreach ($response['updates'] as $event){
 						if(DEBUG) $vkmessenger_module->processMessage($event);
 						else { 
@@ -63,8 +67,8 @@ while (1){
 				$connect['ts'] = $response['ts'] ?? $connect['ts'];
 			}
 		} else { //если данные для подключения отсутствуют (нет доступа в интернет), пробуем получить их каждые 5 секунд
-			sleep(5);
 			$connect = $vkmessenger_module->vkApi_call('groups.getLongPollServer');
+			if(!isset($connect['server'])) sleep(5);
 		}
 	} else sleep(1);
 	if (file_exists('./reboot') || isset($_GET['onetime'])) exit;

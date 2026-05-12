@@ -33,10 +33,11 @@ if ($this->mode=='update') {
     // NAME
     $rec['TITLE']=gr('title');
     $rec['DESCRIPTION']=gr('description');
-    $old_code=isset($rec['CODE'])?$rec['CODE']:'';
+    $old_code=$rec['CODE'] ?? '';
     $rec['CODE'] = gr('code');
     $rec['ENABLE']=gr('enable','int');
     $rec['TYPE_EVENT']=gr('type_event');
+	$rec['REACTION_ID']=gr('reaction_id') ?? 0;
     
     if (!empty($rec['CODE'])) {
         $errors = php_syntax_error($rec['CODE']);

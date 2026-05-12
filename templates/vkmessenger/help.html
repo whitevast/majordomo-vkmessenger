@@ -7,6 +7,7 @@
 		<a data-toggle="collapse" data-parent="#accordion" href="#reg_help">Подключение к сообществу</a>
 		</div>
 		<div class="panel-body collapse" id="reg_help">
+		<div style="width:900px">
 		<p>Для работы модуля необходимо создать сообщество и получить его ключ доступа. <br>
 		Для этого переходим по <a href="https://vk.com/groups" target="_blank">ссылке</a> и создаём сообщество.<br>
 		Называем как угодно, выбираем тематику, например "Дом и дача", нажимаем "Создать сообщество". Далее можно выбрать аватарку и сразу добавить участников. Можно сделать это и позже.<br>
@@ -17,12 +18,14 @@
 		<br>
 		В <b>настройки</b> модуля вносится ключ вида "<b>vk1.a.yZ7PrepLXsP7CDJ89F1LKqb-EzmA6DPUqCAxiKvszSdMO1B1r7Ca1qlN5QabM9q982QQtgWxgRLU-cekQHxr810RXvl-twHKWcB2_us_6XnWHVW-gIxhlxs0MBMwmU5dzX5JKLp4QM2Qiy9YaqIGh74rXxuO3kKzfSXIQkGwzkIzPYH0lDFoMkF-YwGSsc87hTYPF-tq9-mlQJufIWetHA</b>".</code></p>
 		</div>
+		</div>
 	</div>
 	<div class="panel panel-info">
 		<div class="panel-heading">
 		<a data-toggle="collapse" data-parent="#accordion" href="#settings_help">Регистрация и настройка пользователя</a>
 		</div>
 		<div class="panel-body collapse" id="settings_help">
+		<div style="width:900px">
 		<p><b>Регистрация</b></br>
 		Добавляем подписчиков через меню Управленя сообществом (Подписчики -> Приглашения).
 		Далее каждому подписчику для возможности принятия сообщений нужно нажать в клиенте кнопку "Начать".<br>
@@ -32,6 +35,7 @@
         В опции "Приоритет истории сo звуком" можно задать уровень важности сообщений истории, которые будут приходить со звуком.<br>
         При отправке сообщений из своих скриптов/методов можно принудительно задать параметр отправки со звуком или без (см. ниже).
         </p>
+		</div>
 		</div>
 	</div>
 	<div class="panel panel-info">
@@ -59,6 +63,7 @@
 		Для типов text и callback можно выбрать цвет.</br>
 		<div class="table-responsive">
 		<table class="table table-striped">
+		<tr>
 		<td><b>Цвет</br></td>
 		<td><b>Описание</br></td>
 		</tr>
@@ -69,8 +74,6 @@
 		</table>
 		</div>
 		У каждой кнопки есть настройка контроля доступа, где можно задать пользователей, которым данная команда доступна.</br>
-		<!--Если у команды поле код пусто, то команда передается дальше на обработку в сценарии и в processCommand.</br>
-		Если поле кода не пустое, то выполняется только код-->
 		При нажатии на кнопку в клиенте выполняется код из поля код</br>
 		Для отправки ответа на команду в конце кода должен быть <b>return</b> с текстовым сообщением.</br>
 		Можно сформировать в коде клавиатуру согласно разделу "Формирование клавиатуры". Имя переменной клавиатуры должно быть $keyboard. В таком случае, клавиатура будет передана с сообщением <b>return</b></br>
@@ -90,13 +93,56 @@
 		<a data-toggle="collapse" data-parent="#accordion" href="#events_help">События</a>
 		</div>
 		<div class="panel-body collapse" id="events_help">
-		Данный функционал позволяет навесить на события, такие как получение текстового сообщения, файла, граффити, местоположения и др, свои обработчики.</br>
+		<div style="width:950px">
+		<p>Данный функционал позволяет навесить на события, такие как получение текстового сообщения, файла, граффити, местоположения и др, свои обработчики.</br>
 		Например, при получении сообщения "Включи чайник", включить чайник, или, при получении ссылки на торрент, включить его закачку.</br>
 		Возможности ограничены только фантазией и знаниями PHP.</br>
-		Для каждого из типов событий в выполняемый код передаются определенные параметры, такие как например <b>$user_id</b>.</br>
+		Для каждого из типов событий в выполняемый код передаются определенные параметры, такие как, например, <b>$user_id</b>.</br>
 		Более подробно о параметрах расписано в подсказке, которая появляется при выборе типа события.</br>
-        Для выхода из обработчика событий можно задать в коде обраюотчика параметр <b>$skip=true;</b>. Это нужно для того чтобы модуль перестал вызывать все подходящие обработчики, когда нужный сработал.</br>
-		Событие <b>callback</b> используется для определения нажатия callback кнопок. Идентификация происходит по информации из параметра $payload функции buildKeyBoardButton(). Если $payload при создании кнопки задан не был, туда добавляется имя кнопки.
+        Для окончания вызова обработчиков событий можно задать в коде обработчика параметр <b>$skip=true;</b>. Это нужно для того, чтобы модуль перестал вызывать все подходящие обработчики, когда нужный сработал.</br></p>
+		<p><b>Callback</b><br>
+		Событие <b>Callback</b> используется для определения нажатия callback кнопок. Идентификация происходит по информации из параметра $payload функции buildKeyBoardButton(). Если $payload при создании кнопки задан не был, туда добавляется имя кнопки.</br></p>
+		<p><b>Реакции</b></br>
+		Можно отлавливать реакции (лайки) на определённые сообщения, отправленные модулем. Например, МДМ отправляет сообщение: "Зажечь камин?". Пользователь при этом ставит 🔥, и камин зажигается...</br>
+		Существует 40 реакций и на каждую из них можно назначить какое-либо действие.</br>
+		Для привязки обработчика реакций к сообщению следуем по следующему алгоритму:<br>
+		<strong>1.</strong> Создаем Событие Реакции, задаём номер (например, 3). К этому номеру будем привязывать сообщения. Пишем необходимый код, например:
+		<code style="display:block">
+		if($reaction_id == 2) sg('caminZal.status', 1); //если пользователь поставил 🔥<br>
+		else if($reaction_id == 0) sg('caminZal.status', 0); //если пользователь снял реакцию
+		</code>
+		<strong>2.</strong> Теперь, при отправке сообщения, нужно привязать обработчик к этому сообщению. Существует три способа, как это сделать:<br>
+		<strong>а)</strong> Задать в функции отправки сообщения шестым (6) параметром номер реакции, например:
+		<code style="display:block">
+		$this->sendmessageToUser(123456, 'Зажечь камин?', '', false, '', 3);<br>
+		</code>
+		Здесь важно проследить, что все необходимые вам параметры заполнены.<br>
+		<strong>б)</strong> Отправить сообщение через API с заданием reaction:<br>
+		<code style="display:block">
+		callAPI('/api/module/vkmessenger','GET',array('command'=>'sendMessage','user_id'=>139809588,'message'=>'Зажечь камин?','reaction'=>3));
+		</code>
+		<strong>в)</strong> Функции отправки возвращают ID отправленного сообщения, его можно передать в специальную функцию<br>
+		<strong>setReaction($user_id, $messge_id, $reaction_id):</strong>
+		<code style="display:block">
+		$user_id = '123456';<br>
+		$mesage_id = $this->sendmessageToUser($user_id, 'Зажечь камин?');<br>
+		$this->setReaction($user_id, $messge_id, 3);
+		</code>
+		Готово! Реакции на данное сообщение будут обрабатываться 7 дней - столько живёт история сообщений в базе данных.<br>
+		<strong>Номер События Реакции 100 привязан к событию SAY!</strong><br>
+		То есть можно создать Событие Реакции с номером 100 и оно будет привязано к каждому сообщению, переданному через SAY.<br>
+		Можно выполнять определённые действия при определенном тексте, переданном через SAY:<br>
+		<code style="display:block">
+		if($text == "Солнце село"){<br>
+		&nbsp;if($reaction_id == 2) sg('caminZal.status', 1); //если пользователь поставил 🔥<br>
+		&nbsp;else if($reaction_id == 0) sg('caminZal.status', 0); //если пользователь снял реакцию<br>
+		}
+		</code><strong>Номер События Реакции 101 выполняется во всех остальных случаях</strong><br>
+		Если создать Событие Реакции с номером 101, в нём можно обрабатывать реакции на все, не привязанные к другим реакциям, сообщения. В том числе на свои.<br>
+		Также, можно <strong>отправлять</strong> реакции на входящие сообщения с помощью функции <strong>sendReaction($user_id, $message_id, $reaction_id)</strong>;</br>
+		Здесь <strong>$user_id</strong> и <strong>$message_id</strong> мы получаем из события, а <strong>$reaction_id</strong> соответствует коду из раздела <strong>Реакции</strong>.</br>
+		Отправлять можно реакции с <strong>1 до 16</strong>, получать можно все 40. Снятие реакции - тоже реакция с номером <strong>0</strong>!</p>
+		</div>
 		</div>
 	</div>
 	
@@ -107,7 +153,7 @@
 		<div class="panel-body collapse" id="keyboard_help">
 		<div style="width:900px">
 		Чтобы сформировать клавиатуру в коде, нужно действовать по следующему алгоритму:<br>
-		1.Формируем кнопки клавиатуры с помощью функции <strong>buildKeyBoardButton($name, $type, $payload, $color, $data)</strong><br>
+		<strong>1.</strong> Формируем кнопки клавиатуры с помощью функции <strong>buildKeyBoardButton($name, $type, $payload, $color, $data)</strong><br>
 		<div class="table-responsive">
 		<table class="table table-striped">
 		<td><b>Параметр</br></td>
@@ -124,13 +170,13 @@
 		Параметры начиная с $payload необязательны для заполнения.<br>
 		Формируем таким образом необходимое количество кнопок.<br>
 		Для всех, без исключения клавиатур, кроме особых случаев, я рекомендую использовать callback, а не text кнопки.<br>
-		<pre>
-		$buttons[] = $this->buildKeyBoardButton('Кнопка 1', 'text', '', 'secondary);
-		$buttons[] = $this->buildKeyBoardButton('Кнопка 2', 'location');
-		$buttons[] = $this->buildKeyBoardButton('Кнопка 3', 'open_link, '', '', 'https://vk.com');
-		$buttons[] = $this->buildKeyBoardButton('Кнопка 4', 'callback, 'button4', 'positive');
-		</pre>
-		2. Формируем клавиатуру с помощью функции buildKeyBoard <strong>buildKeyBoard($buttons, $inline, $one_time, $lines)</strong><br>
+		<code style="display:block">
+		$buttons[] = $this->buildKeyBoardButton('Кнопка 1', 'text', '', 'secondary);<br>
+		$buttons[] = $this->buildKeyBoardButton('Кнопка 2', 'location');<br>
+		$buttons[] = $this->buildKeyBoardButton('Кнопка 3', 'open_link, '', '', 'https://vk.com');<br>
+		$buttons[] = $this->buildKeyBoardButton('Кнопка 4', 'callback, 'button4', 'positive');<br>
+		</code>
+		<strong>2.</strong> Формируем клавиатуру с помощью функции buildKeyBoard <strong>buildKeyBoard($buttons, $inline, $one_time, $lines)</strong><br>
 		<div class="table-responsive">
 		<table class="table table-striped">
 		<td><b>Параметр</br></td>
@@ -145,9 +191,10 @@
 		</div>
 		Также, можно использовать функцию <b>buildInlineKeyBoard($buttons, $lines);</b><br>
 		Клавиатура готова! Можно передать её пользователю.<br>
-		<pre>
-		$keyboard = $this->buildKeyBoard($buttons, true);
-		$this->sendMessageToUser($user_id, 'Клавиатура для Вас', $keyboard);</pre>
+		<code style="display:block">
+		$keyboard = $this->buildKeyBoard($buttons, true);<br>
+		$this->sendMessageToUser($user_id, 'Клавиатура для Вас', $keyboard);<br>
+		</code>
 		Нужно иметь ввиду, что не-inline клавиатура будет заменена сформированной в модуле клавиатурой при отправке следующего сообщения.<br>
 		Также, есть функции для изменения и удаления сообщения. С помощью них можно делать клавиатуры интерактивными.<br>
 		<strong>messageEdit($user_id, $message_id, $message, $keyboard, $silent, $attachments)</strong>;<br>
@@ -162,6 +209,7 @@
 		<a data-toggle="collapse" data-parent="#accordion" href="#webhook_help">Webhook</a>
 		</div>
 		<div class="panel-body collapse" id="webhook_help">
+		<div style="width:900px">
 		<p><b>Для чего?</b><br>
 		Для того, что бы исключить постоянный опрос серверов на наличие новых сообщений. 
 		Сервера Вконтакте сами уведомят о поступлении нового сообщения.</p> 
@@ -175,6 +223,7 @@
 		3. Работает независимо от того, запущен основной цикл или нет.</p>
 		<p>Текущий статус использования webhook можно узнать нажав кнопку <u>"Status webhook"</u></p>
 		</div>
+		</div>
 	</div>
 
 	<div class="panel panel-info">
@@ -182,16 +231,29 @@
 		<a data-toggle="collapse" data-parent="#accordion" href="#code_help">Вызов модуля в своих скриптах/методах</a>
 		</div>
 		<div class="panel-body collapse" id="code_help">
+		<div style="width:1200px">
 		<p><b>Для отправки текстовых сообщений</b><br>
-		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
+		<code style="display:block">
+		include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
         $vkmessenger_module = new vkmessenger();<br>
         $text = "test message";<br>
         $vkmessenger_module->sendMessageToUser($user, $text);<br>
-		$vkmessenger_module->sendMessageToUser($user, $text, '', true); // без звука<br>
-        $vkmessenger_module->sendMessageToAdmin($text." to admin");<br>
-		$vkmessenger_module->sendMessageToAdmin($text, true);// без звука<br>
-        $vkmessenger_module->sendMessageToAll($text." to all");<br>
-        $vkmessenger_module->sendMessageToAll($text, true);// без звука<br>
+		$vkmessenger_module->sendMessageToUser($user, $text, '', true); //без звука<br>
+        $vkmessenger_module->sendMessageToAdmin($text." to admin"); //всем администраторам<br>
+		$vkmessenger_module->sendMessageToAdmin($text, true); //всем администраторам без звука<br>
+        $vkmessenger_module->sendMessageToAll($text." to all"); //всем<br>
+        $vkmessenger_module->sendMessageToAll($text, true); //всем без звука<br>
+		</code>	
+		Или через API:
+		<code style="display:block">
+        $text = "test message";<br>
+		$keyboard = ...
+		callAPI('/api/module/vkmessenger','GET',array('command'=>'sendMessage','user_id'=>139809588,'message'=>$text,));<br>
+        callAPI('/api/module/vkmessenger','GET',array('command'=>'sendMessage','user_id'=>139809588,'message'=>$text, 'silent'=>true)); //без звука<br>
+		callAPI('/api/module/vkmessenger','GET',array('command'=>'sendMessageAdmin','message'=>$text, 'keyboard'=>$keyboard)); //c клавиатурой<br>
+        callAPI('/api/module/vkmessenger','GET',array('command'=>'sendMessageAdmin','message'=>$text, 'silent'=>true)); //без звука<br>
+		callAPI('/api/module/vkmessenger','GET',array('command'=>'sendMessageAll','message'=>$text,));<br>
+        callAPI('/api/module/vkmessenger','GET',array('command'=>'sendMessageAll','message'=>$text, 'silent'=>true)); //без звука<br>
 		</code>	
 		<p><b>Для отправки изображений</b><br>
 		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
@@ -204,6 +266,17 @@
         $vkmessenger_module->sendImageToAll($img);<br>
         $vkmessenger_module->sendImageToAll($img, '', '', true); // без звука<br>
         </code>
+		Или через API:
+		<code style="display:block">
+        $img = '/var/www/images/trees.jpg';<br>
+		$keyboard = ...
+		callAPI('/api/module/vkmessenger','GET',array('command'=>'sendImage','user_id'=>139809588,'image'=>$img));<br>
+        callAPI('/api/module/vkmessenger','GET',array('command'=>'sendImage','user_id'=>139809588,'image'=>$img,'message'=>'Описание', 'silent'=>true)); //без звука<br>
+		callAPI('/api/module/vkmessenger','GET',array('command'=>'sendImageAdmin','image'=>$img, 'keyboard'=>$keyboard)); //c клавиатурой<br>
+        callAPI('/api/module/vkmessenger','GET',array('command'=>'sendImageAdmin','image'=>$img,'message'=>'Описание', 'silent'=>true)); //без звука<br>
+		callAPI('/api/module/vkmessenger','GET',array('command'=>'sendImageAll','image'=>$img));<br>
+        callAPI('/api/module/vkmessenger','GET',array('command'=>'sendImageAll','image'=>$img,'message'=>'Описание', 'silent'=>true)); //без звука<br>
+		</code>	
 		К изображению можно добавить текстовое описание</p>
 		
 		<p><b>Для отправки статуса действия</b><br>
@@ -216,8 +289,9 @@
 		<li>videomessage - загрузка видео</li>
 		<li>audiomessage - загрузка аудио</li>
 		<li>file - загрузка файла</li></ul>
-		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
-		$vkmessenger_module = new vkmessenger();<br>
+		<code style="display:block">
+		include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
+		$vkmessenger_module = new vkmessenger();<br>
 		$vkmessenger_module->sendAction($chat_id,"photo");<br>
 		///<br>
 		...........<br>
@@ -228,7 +302,8 @@
 		Так как ВК ограничивает рассылку сообщений (не более 20 в секунду), можно воспользоваться данной функцией для массовой рассылки.<br>
 		При этом можно либо создать клавиатуру самостоятельно, либо она возьмется из настроек первого пользователя в списке.<br>
 		Таким образом можно рассылать изменения в клавиатуре (при условии, что она однотипная) всем пользователм, не являющимся администраторами.<br>
-		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
+		<code style="display:block">
+		include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
         $vkmessenger_module = new vkmessenger();<br>
         $vkmessenger_module->sendMessageToUsers('Продам гараж');<br>
 		$vkmessenger_module->sendMessageToUsers('Опрос', $keuboard, true); // без звука с переданной клавиатурой<br>
@@ -236,7 +311,8 @@
 		
 		<p><b>Рассылка изображений большому количеству пользователей</b><br>
 		Аналогично массовой рассылке, только с изображением.
-		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
+		<code style="display:block">
+		include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
 		$img = '/var/www/images/trees.jpg';<br>
         $vkmessenger_module = new vkmessenger();<br>
         $vkmessenger_module->sendImageToUsers($img, 'Продам гараж');<br>
@@ -244,14 +320,16 @@
         </code><br>
 		
 		<p><b>Для отправки файлов</b><br>
-		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
+		<code style="display:block">
+		include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
 		$vkmessenger_module = new vkmessenger();<br>
 		$vkmessenger_module->sendFileToUser(139809588, '/var/www/file.txt');<br>
 		$vkmessenger_module->sendFileToAdmin('/var/www/file.txt');<br>
 		$vkmessenger_module->sendFileToAll('/var/www/file.txt');</code></p>
 		
 		<p><b>Для отправки голосового сообщения (формат OGG, OPUS)</b><br>
-		<code style="display:block">include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
+		<code style="display:block">
+		include_once(DIR_MODULES . 'vkmessenger/vkmessenger.class.php');<br>
 		$vkmessenger_module = new vkmessenger();<br>
 		$vkmessenger_module->sendVoiceToUser(139809588, $file_path);<br>
 		$vkmessenger_module->sendVoiceToAdmin($file_path);<br>
@@ -295,14 +373,53 @@
         <b>$callback_id</b> - идентификатор callback запроса</br>
         <b>$text</b> - текст оповещения</br>
 		</p>
-		</br>
-		Текст может содержать HTML разметку для форматирования текста. Поддерживаются следующие теги, в том числе вложенные:
-		<pre>
-		&lt;b&gt;жирный&lt;/b&gt;, &lt;strong&gt;жирный&lt;/strong&gt;
-		&lt;i&gt;курсив&lt;/i&gt;, &lt;em&gt;курсив&lt;/em&gt;
-		&lt;u&gt;подчёркнутый&lt;/u&gt;
-		&lt;a href=&quot;URL&quot;&gt;inline URL&lt;/a&gt;
-		</pre>
+		<p>Текст может содержать HTML разметку для форматирования текста. Поддерживаются следующие теги, в том числе вложенные:
+		<code style="display:block">
+		&lt;b&gt;жирный&lt;/b&gt;, &lt;strong&gt;жирный&lt;/strong&gt;<br>
+		&lt;i&gt;курсив&lt;/i&gt;, &lt;em&gt;курсив&lt;/em&gt;<br>
+		&lt;u&gt;подчёркнутый&lt;/u&gt;<br>
+		&lt;a href=&quot;URL&quot;&gt;inline URL&lt;/a&gt;<br>
+		</code>
+		</p>
+		<p><b>Автоудаление сообщения</b><br>
+        Если отправить сообщение с текстом <b>"del me"</b>, такое сообщение будет сразу удалено.<br>
+		Таким образом можно рассылать изменения клавиатуры.
+		</p>
+		</div>
+		</div>
+	</div>
+	
+	<div class="panel panel-info">
+		<div class="panel-heading">
+		<a data-toggle="collapse" data-parent="#accordion" href="#reaction_help">Реакции</a>
+		</div>
+		<div class="panel-body collapse" id="reaction_help">
+		<div style="width:100px">
+		<div class="table-responsive">
+		<table class="table table-striped">
+		<tr>
+		<td><b>ID</br></td>
+		<td><b>Реакция</br></td>
+		<td><b>ID</br></td>
+		<td><b>Реакция</br></td>
+		<td><b>ID</br></td>
+		<td><b>Реакция</br></td>
+		<td><b>ID</br></td>
+		<td><b>Реакция</br></td>
+		</tr>
+		<tr><td>1</td><td>❤️</td><td>11</td><td>😄</td><td>21</td><td>🗿</td><td>31</td><td>🤬</td></tr>
+		<tr><td>2</td><td>🔥</td><td>12</td><td>🤔</td><td>22</td><td>🙄</td><td>32</td><td>👀</td></tr>
+		<tr><td>3</td><td>😂</td><td>13</td><td>🙏</td><td>23</td><td>💔</td><td>64</td><td>⚡</td></tr>
+		<tr><td>4</td><td>👍</td><td>14</td><td>😘</td><td>24</td><td>😎</td><td>34</td><td>🌚</td></tr>
+		<tr><td>5</td><td>💩</td><td>15</td><td>😍</td><td>42</td><td>🤮</td><td>35</td><td>💯</td></tr>
+		<tr><td>6</td><td>❓️</td><td>16</td><td>🎉</td><td>26</td><td>👏</td><td>36</td><td>💅</td></tr>
+		<tr><td>7</td><td>😭</td><td>17</td><td>🤡</td><td>27</td><td>😢</td><td>37</td><td>🤯</td></tr>
+		<tr><td>8</td><td>😡</td><td>18</td><td>🤝</td><td>28</td><td>✅</td><td>38</td><td>😴</td></tr>
+		<tr><td>9</td><td>👎</td><td>19</td><td>😲</td><td>29</td><td>🏆</td><td>39</td><td>😈</td></tr>
+		<tr><td>10</td><td>👌</td><td>20</td><td>😐</td><td>30</td><td>😱</td><td>40</td><td><img src="../templates/vkmessenger/img/1fae1.png" height="22"></td></tr>
+		</table>
+		</div>
+		</div>
 		</div>
 	</div>
 </div>

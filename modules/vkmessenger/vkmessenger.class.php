@@ -227,6 +227,7 @@ function admin(&$out) {
 			'message_read' => 1,
 			'message_edit' => 1,
 			'message_reaction_event' => 1,
+			'message_reply' => 1,
 			'photo_new' => 1,
 	  ));
 	  $this->vkApi_call('groups.setLongPollSettings', array( //отключаем LongPoll
@@ -271,6 +272,7 @@ function admin(&$out) {
 			'message_read' => 1,
 			'message_edit' => 1,
 			'message_reaction_event' => 1,
+			'message_reply' => 1,
 			'photo_new' => 1,
 		));
 		$managers = $this->vkApi_call('groups.getMembers', array(
@@ -304,7 +306,7 @@ function admin(&$out) {
   }
   $update_keyboard = gr('update_keyboard');
   if ($update_keyboard) {
-  	$this->sendMessageToAll("Обновление клавиатуры", '', true);
+  	$this->sendMessageToAdmin("del me", '', true);
   	$this->redirect("?tab=cmd");
   }
   if ($this->data_source=='vkmessenger' || $this->data_source=='') {
@@ -322,10 +324,10 @@ function admin(&$out) {
 		$image = gr('image') ?? '';
 		$silent = gr('silent') ?? '';
 		if ($image != '' && file_exists($image)) {
-			$this->sendImageToUser($user, $image, $text);
+			$this->sendImageToUser($user, $image, $text, '', $silent, array(), 100);
 		}
 		else if ($text != '') {
-			$this->sendMessageToUser($user, $text);
+			$this->sendMessageToUser($user, $text, '', $silent, array(), 100);
 		}
 		echo "Ok";
 		exit;
@@ -505,24 +507,62 @@ function api($params) {
 		$this->downloadFile($params['url'], $params['path']);
 		$this->writeLog($params['url']);
 		$this->writeLog($params['path']);
-	} else if ($command == "getapi"){
+	} else if($command == "getapi"){
 		$res = $this->vkApi_call($params['method'], $params['data']);
 		$this->writeLog($res);
+	} else if($command == "sendMessage"){
+		$keyboard = $params['keyboard'] ?? '';
+		$silent = $params['silent'] ?? false;
+		$reaction_id = $params['reaction'] ?? 0;
+		if($params['message'] != '' )
+			$this->sendMessageToUser($params['user_id'], $params['message'], $keyboard, $silent, array(), $reaction_id);
+	} else if($command == "sendMessageAdmin"){
+		$keyboard = $params['keyboard'] ?? '';
+		$silent = $params['silent'] ?? false;
+		$reaction_id = $params['reaction'] ?? 0;
+		if($params['message'] != '' )
+			$this->sendMessageToAdmin($params['message'], $keyboard, $silent, array(), $reaction_id);
+	} else if($command == "sendMessageAll"){
+		$keyboard = $params['keyboard'] ?? '';
+		$silent = $params['silent'] ?? false;
+		$reaction_id = $params['reaction'] ?? 0;
+		if($params['message'] != '' )
+			$this->sendMessageToAll($params['message'], $keyboard, $silent, array(), $reaction_id);
+	} else if($command == "sendImage"){
+		$keyboard = $params['keyboard'] ?? '';
+		$silent = $params['silent'] ?? false;
+		$reaction_id = $params['reaction'] ?? 0;
+		if($params['image'] != '' && file_exists($params['image']))
+			$this->sendImageToUser($params['user_id'], $params['image'], $params['message'], $keyboard, $silent, array(), $reaction_id);
+	} else if($command == "sendImageAdmin"){
+		$keyboard = $params['keyboard'] ?? '';
+		$silent = $params['silent'] ?? false;
+		$reaction_id = $params['reaction'] ?? 0;
+		if($params['image'] != '' && file_exists($params['image']))
+			$this->sendImageToAdmin($params['image'], $params['message'], $keyboard, $silent, array(), $reaction_id);
+	} else if($command == "sendImageAll"){
+		$keyboard = $params['keyboard'] ?? '';
+		$silent = $params['silent'] ?? false;
+		$reaction_id = $params['reaction'] ?? 0;
+		if($params['image'] != '' && file_exists($params['image']))
+			$this->sendImageToAll($params['image'], $params['message'], $keyboard, $silent, array(), $reaction_id);
 	}
+	
     //return $data;
 }
-
 
  function processMessage($indata) {
 	$skip = false;
 	$this->getConfig();
 	if(DEBUG) print_r($indata);
 	if($indata['type'] == 'message_new'){ //обрабатываем входящее сообщение
+	$this->saveData($indata, 0);
 	$message = $indata['object']['message'];
 		$user = SQLSelectOne("SELECT * FROM vk_user WHERE USER_ID LIKE '" . DBSafe($message['from_id']) . "'");
 		$user_id = $message['from_id'];
 		$chat_id = $user_id;
 		$text = $message['text'];
+		$message_id = $message['conversation_message_id'];
 		if(!empty($message['payload'])){
 			$payload = $message['payload'];
 			$payload_data = json_decode($payload, true);
@@ -651,7 +691,7 @@ function api($params) {
                 // get events for location
                 $events = SQLSelect("SELECT * FROM vk_event WHERE TYPE_EVENT=8 and ENABLE=1;");
                 foreach($events as $event) {
-                    if($event['CODE']) {
+                    if(!empty($event['CODE'])) {
                         $this->writeLog("Execute code event " . $event['TITLE']);
                         try {
                             eval($event['CODE']);
@@ -673,7 +713,7 @@ function api($params) {
         // Выполним события при получении текстового сообщения
             $events = SQLSelect("SELECT * FROM vk_event WHERE TYPE_EVENT=1 and ENABLE=1;");
             foreach($events as $event) {
-                if($event['CODE']) {
+                if(!empty($event['CODE'])) {
                     $this->writeLog("Выполнение кода события " . $event['TITLE']);
                     try {
                         eval($event['CODE']);
@@ -691,57 +731,110 @@ function api($params) {
 		//callback кнопка
 	} else if($indata['type'] == 'message_event'){
 		$user = SQLSelectOne("SELECT * FROM vk_user WHERE USER_ID LIKE '" . DBSafe($indata['object']['user_id']) . "'");
-		$user_id = $indata['object']['user_id'];
-		$chat_id = $user_id;
-		$id = $indata['object']['payload']['id'] ?? '';
-		$payload = $indata['object']['payload']['data'] ?? '';
-		$callback = $payload;
-		$event_id =  $indata['object']['event_id'];
-		$message_id = $indata['object']['conversation_message_id'] ?? '';
-		$callback_id = $event_id;
-		// Выполним код из кнопки
-		$cmd = SQLSelectOne("SELECT CODE FROM vk_cmd WHERE TITLE='$id'");
-		if(!empty($cmd['CODE'])){
-			try {
-				$success = eval($cmd['CODE']);
-				if(!empty($success)){
-					if(!isset($keyboard)) $keyboard = '';
-					$this->sendMessageTo($user, $success, $keyboard);
-				}
-			}
-			catch(Exception $e) {
-				registerError('vkmessenger', sprintf('Exception in "%s" method ' . $e->getMessage(), $text));
-			}
-			// пропуск дальнейшей обработки если с обработчике событий установили $skip (события обрабатываться не будут)
-            if($skip) {
-                $this->writeLog("Skip next processing message");
-                return;
-            }
-		}
-		// Выполним события при получении callback
-		$events = SQLSelect("SELECT * FROM vk_event WHERE TYPE_EVENT=9 and ENABLE=1;");
-		foreach($events as $event) {
-			if($event['CODE']) {
-				$this->writeLog("Выполнение кода события " . $event['TITLE']);
+		if($user['CMD'] == 1) {
+			$user_id = $indata['object']['user_id'];
+			$chat_id = $user_id;
+			$id = $indata['object']['payload']['id'] ?? '';
+			$payload = $indata['object']['payload']['data'] ?? '';
+			$callback = $payload;
+			$event_id =  $indata['object']['event_id'];
+			$message_id = $indata['object']['conversation_message_id'] ?? '';
+			$callback_id = $event_id;
+			// Выполним код из кнопки
+			$cmd = SQLSelectOne("SELECT CODE FROM vk_cmd WHERE TITLE='$id'");
+			if(!empty($cmd['CODE'])){
 				try {
-					eval($event['CODE']);
+					$success = eval($cmd['CODE']);
+					if(!empty($success)){
+						if(!isset($keyboard)) $keyboard = '';
+						$this->sendMessageTo($user, $success, $keyboard);
+					}
 				}
 				catch(Exception $e) {
-					registerError('vkmessenger', sprintf('Exception in "%s" method ' . $e->getMessage(), $text));
+					registerError('vkmessenger', sprintf('Exception in "%s" method ' . $e->getMessage()));
+				}
+				// пропуск дальнейшей обработки если с обработчике событий установили $skip (события обрабатываться не будут)
+				if($skip) {
+					$this->writeLog("Skip next processing message");
+					return;
 				}
 			}
-			if($skip) {
-				$this->writeLog("Skip next processing events message");
-				break;
+			// Выполним события при получении callback
+			$events = SQLSelect("SELECT * FROM vk_event WHERE TYPE_EVENT=9 and ENABLE=1;");
+			foreach($events as $event) {
+				if(!empty($event['CODE'])) {
+					$this->writeLog("Выполнение кода события " . $event['TITLE']);
+					try {
+						eval($event['CODE']);
+					}
+					catch(Exception $e) {
+						registerError('vkmessenger', sprintf('Exception in "%s" method ' . $e->getMessage()));
+					}
+				}
+				if($skip) {
+					$this->writeLog("Skip next processing events message");
+					break;
+				}
+			}
+			//чтобы кнопка не крутилась, отправляем пустой event_data
+			$this->vkApi_call('messages.sendMessageEventAnswer', array(
+					'user_id' => $indata['object']['user_id'],
+					'peer_id' => $indata['object']['peer_id'],
+					'event_id'=> $indata['object']['event_id'],
+					'event_data'=> '',
+			));
+		}
+	//отправленное сообщение
+	} else if($indata['type'] == 'message_reply'){
+		$message = $indata['object'];
+		$peer_id = $message['peer_id'];
+		$text = $message['text'];
+		$cmid = $message['conversation_message_id'];
+		if($text == 'del me') $this->messageDelete($peer_id, $cmid);
+	//реакции
+	} else if($indata['type'] == 'message_reaction_event'){
+		$message = $indata['object'];
+		if($message['peer_id'] != $message['reacted_id']) return; //если реакцию отправил бот, выходим
+		$user_id = $message['peer_id'];
+		$message_id = $message['cmid'];
+		$reaction_id = $message['reaction_id'] ?? 0;
+		$user = SQLSelectOne("SELECT * FROM vk_user WHERE USER_ID LIKE '" . DBSafe($indata['object']['peer_id']) . "'");
+		if($user['CMD'] == 1) {
+			// Проверим, назначена ли обработка реакции на сообщение
+			$reaction = SQLSelectOne("SELECT * FROM vk_history WHERE USER_ID=".$user['USER_ID']." AND MESSAGE_ID=".$message_id." AND REACTION_ID!=0");
+			print_r($reaction);
+			if(!empty($reaction)){
+				$text = !empty($reaction['MESSAGE']) ? json_decode($reaction['MESSAGE']) : '';
+				// Выполним события при получении реакции
+				$event = SQLSelectOne("SELECT * FROM vk_event WHERE TYPE_EVENT=10 AND ENABLE=1 AND REACTION_ID=".$reaction['REACTION_ID']);
+				if(!empty($event['CODE'])) {
+					$this->writeLog("Выполнение кода события " . $event['TITLE']);
+					try {
+						eval($event['CODE']);
+					}
+					catch(Exception $e) {
+						registerError('vkmessenger', sprintf('Exception in "%s" method ' . $e->getMessage()));
+					}
+				}
+			} else {
+				// Выполним события по умолчанию при получении реакции
+				$event = SQLSelectOne("SELECT * FROM vk_event WHERE TYPE_EVENT=10 AND ENABLE=1 AND REACTION_ID=101");
+				if(!empty($event['CODE'])) {
+					$res = $this->vkApi_call('messages.getById', array(
+										'peer_id' => $message['peer_id'],
+										'cmids'   => $message['cmid'],
+										));
+					$text = $res['items'][0]['text'];
+					$this->writeLog("Выполнение кода события " . $event['TITLE']);
+					try {
+						eval($event['CODE']);
+					}
+					catch(Exception $e) {
+						registerError('vkmessenger', sprintf('Exception in "%s" method ' . $e->getMessage()));
+					}
+				}
 			}
 		}
-		//чтобы кнопка не крутилась, отправляем пустой event_data
-		$this->vkApi_call('messages.sendMessageEventAnswer', array(
-				'user_id' => $indata['object']['user_id'],
-				'peer_id' => $indata['object']['peer_id'],
-				'event_id'=> $indata['object']['event_id'],
-				'event_data'=> '',
-		));
 	}
  }
  
@@ -757,14 +850,41 @@ function api($params) {
 				if($level >= $user['HISTORY_LEVEL']){
 					if ($level >= $user['HISTORY_SILENT']) $silent = false;
 					else $silent = true;
-					$url=BASE_URL."/ajax/vkmessenger.html?sendMessage=1&user=".$user['USER_ID']."&text=".urlencode($message)."&image=".urlencode($image)."&silent=".$silent;
-					getURLBackground($url,0);
+					if(!empty($image)){
+						callAPI('/api/module/vkmessenger','GET',array('command'=>'sendImage','user_id'=>$user['USER_ID'],'message'=>$message,'imaage'=>$image,'silent'=>$silent,'reaction'=>100));
+					} else {
+						callAPI('/api/module/vkmessenger','GET',array('command'=>'sendMessage','user_id'=>$user['USER_ID'],'message'=>$message, 'silent'=>$silent, 'reaction'=>100));
+					}
+					//$url=BASE_URL."/ajax/vkmessenger.html?sendMessage=1&user=".$user['USER_ID']."&text=".urlencode($message)."&image=".urlencode($image)."&silent=".$silent;
+					//getURLBackground($url,0);
 					//$this->sendMessageTo($user, $message, '', $silent);
 				}
 			}
 		}
+	} else if($event == 'HOURLY'){
+		if(date('H') == '00' and date('i') == '00' ){
+			 SQLExec("DELETE FROM vk_history WHERE CREATED < NOW() - INTERVAL 7 DAY");
+		}
 	}
  }
+ 
+// Find data in module
+function findData($data) {
+
+	$res = array();
+	// cmd
+	$cmds = SQLSelect("SELECT `ID`,`TITLE`, `DESCRIPTION` FROM `vk_cmd` where `TITLE` like '%" . DBSafe($data) . "%' OR `DESCRIPTION` like '%" . DBSafe($data) . "%' OR `CODE` like '%" . DBSafe($data) . "%'  order by TITLE");
+	foreach($cmds as $cmd){
+	$res[]= '<span class="label label-primary">Command</span>&nbsp;<a href="/panel/vkmessenger.html?md=vkmessenger&inst=adm&view_mode=cmd_edit&id=' . $cmd['ID'] . '.html">' . $cmd['TITLE']. ($cmd['DESCRIPTION'] ? '<small style="color: gray;padding-left: 5px;"><i class="glyphicon glyphicon-arrow-right" style="font-size: .8rem;vertical-align: text-top;color: lightgray;"></i> ' . $cmd['DESCRIPTION'] . '</small>' : '').'</a>';
+	}
+	// events
+	$events = SQLSelect("SELECT `ID`,`TITLE`, `DESCRIPTION` FROM `vk_event` where `TITLE` like '%" . DBSafe($data) . "%' OR `DESCRIPTION` like '%" . DBSafe($data) . "%' OR `CODE` like '%" . DBSafe($data) . "%'  order by TITLE");
+	foreach($events as $event){
+		$res[]= '<span class="label label-info">Event</span>&nbsp;<a href="/panel/vkmessenger.html?md=vkmessenger&inst=adm&view_mode=event_edit&id=' . $event['ID'] . '.html">' . $event['TITLE'].($cmd['DESCRIPTION'] ? '<small style="color: gray;padding-left: 5px;"><i class="glyphicon glyphicon-arrow-right" style="font-size: .8rem;vertical-align: text-top;color: lightgray;"></i> ' . $cmd['DESCRIPTION'] . '</small>' : ''). '</a>';
+	}
+	return $res;
+}
+ 
 /**
 * Install
 *
@@ -774,6 +894,22 @@ function api($params) {
 */
  function install($data='') {
   subscribeToEvent($this->name, 'SAY');
+  subscribeToEvent($this->name, 'HOURLY');
+  $this->getConfig();
+  if(!empty($this->config['API_KEY'])){
+	$this->vkApi_call('groups.setLongPollSettings', array(
+		'enabled' => 1,
+		'api_version' => V_API,
+		'message_new' => 1,
+		'message_event' => 1,
+		'message_typing_state' => 1,
+		'message_read' => 1,
+		'message_edit' => 1,
+		'message_reaction_event' => 1,
+		'message_reply' => 1,
+		'photo_new' => 1,
+	));
+  }
   parent::install();
  }
 /**
@@ -785,6 +921,7 @@ function api($params) {
 */
  function uninstall() {
   unsubscribeFromEvent($this->name, 'SAY');
+  unsubscribeFromEvent($this->name, 'HOURLY');
   SQLExec('DROP TABLE IF EXISTS vk_user');
   SQLExec('DROP TABLE IF EXISTS vk_cmd');
   SQLExec('DROP TABLE IF EXISTS vk_user_cmd');
@@ -807,43 +944,53 @@ function api($params) {
  vk_user: FIRST_NAME varchar(255) NOT NULL DEFAULT ''
  vk_user: LAST_NAME varchar(255) NOT NULL DEFAULT ''
  vk_user: USER_ID varchar(25) NOT NULL DEFAULT '0'
- vk_user: MEMBER_ID int(10) NOT NULL DEFAULT '0'
- vk_user: ADMIN int(3) unsigned NOT NULL DEFAULT '0'
- vk_user: SILENT int(3) unsigned NOT NULL DEFAULT '0'
- vk_user: HISTORY int(3) unsigned NOT NULL DEFAULT '0'
- vk_user: HISTORY_LEVEL int(3) unsigned NOT NULL DEFAULT '0'
- vk_user: HISTORY_SILENT int(3) unsigned NOT NULL DEFAULT '0'
- vk_user: CMD int(3) unsigned NOT NULL DEFAULT '0'
- vk_user: PATTERNS int(3) unsigned NOT NULL DEFAULT '0'
- vk_user: DOWNLOAD int(3) unsigned NOT NULL DEFAULT '0'
- vk_user: PLAY int(3) unsigned NOT NULL DEFAULT '0'
+ vk_user: MEMBER_ID int NOT NULL DEFAULT '0'
+ vk_user: ADMIN int unsigned NOT NULL DEFAULT '0'
+ vk_user: SILENT int unsigned NOT NULL DEFAULT '0'
+ vk_user: HISTORY int unsigned NOT NULL DEFAULT '0'
+ vk_user: HISTORY_LEVEL int unsigned NOT NULL DEFAULT '0'
+ vk_user: HISTORY_SILENT int unsigned NOT NULL DEFAULT '0'
+ vk_user: CMD int unsigned NOT NULL DEFAULT '0'
+ vk_user: PATTERNS int unsigned NOT NULL DEFAULT '0'
+ vk_user: DOWNLOAD int unsigned NOT NULL DEFAULT '0'
+ vk_user: PLAY int unsigned NOT NULL DEFAULT '0'
  vk_user: UPDATED datetime
 
- vk_cmd: ID int(10) unsigned NOT NULL auto_increment
+ vk_cmd: ID int unsigned NOT NULL auto_increment
  vk_cmd: TITLE varchar(255) NOT NULL DEFAULT ''
  vk_cmd: DESCRIPTION text
  vk_cmd: CODE text
- vk_cmd: ACCESS int(10) NOT NULL DEFAULT '0'
- vk_cmd: SHOW_MODE int(10) NOT NULL DEFAULT '1'
- vk_cmd: TYPE int(10) NOT NULL DEFAULT '0'
+ vk_cmd: ACCESS int NOT NULL DEFAULT '0'
+ vk_cmd: SHOW_MODE int NOT NULL DEFAULT '1'
+ vk_cmd: TYPE int NOT NULL DEFAULT '0'
  vk_cmd: DATA varchar(255) NOT NULL DEFAULT ''
- vk_cmd: COLOR int(10) NOT NULL DEFAULT '0'
+ vk_cmd: COLOR int NOT NULL DEFAULT '0'
  vk_cmd: LINKED_OBJECT varchar(255) NOT NULL DEFAULT ''
  vk_cmd: LINKED_PROPERTY varchar(255) NOT NULL DEFAULT ''
- vk_cmd: CONDITION int(10) NOT NULL DEFAULT '1'
+ vk_cmd: CONDITION int NOT NULL DEFAULT '1'
  vk_cmd: CONDITION_VALUE varchar(255) NOT NULL DEFAULT ''
- vk_cmd: PRIORITY int(10) NOT NULL DEFAULT '1'
+ vk_cmd: PRIORITY int NOT NULL DEFAULT '1'
 
- vk_user_cmd: ID int(10) unsigned NOT NULL auto_increment
- vk_user_cmd: USER_ID int(10) NOT NULL
- vk_user_cmd: CMD_ID int(10) NOT NULL
+ vk_user_cmd: ID int unsigned NOT NULL auto_increment
+ vk_user_cmd: USER_ID int NOT NULL
+ vk_user_cmd: CMD_ID int NOT NULL
 
- vk_event: ID int(10) unsigned NOT NULL auto_increment
+ vk_event: ID int unsigned NOT NULL auto_increment
  vk_event: TITLE varchar(255) NOT NULL DEFAULT ''
  vk_event: DESCRIPTION text
- vk_event: TYPE_EVENT int(3) unsigned NOT NULL DEFAULT '1'
- vk_event: ENABLE int(3) unsigned NOT NULL DEFAULT '0'
+ vk_event: TYPE_EVENT int unsigned NOT NULL DEFAULT '1'
+ vk_event: REACTION_ID int unsigned NOT NULL DEFAULT '0'
+ vk_event: ENABLE int unsigned NOT NULL DEFAULT '0'
  vk_event: CODE text
+ 
+ vk_history: ID int unsigned NOT NULL auto_increment
+ vk_history: USER_ID varchar(25) NOT NULL DEFAULT '0'
+ vk_history: MESSAGE_ID int unsigned NOT NULL DEFAULT '0'
+ vk_history: CREATED datetime
+ vk_history: DIRECTION int unsigned NOT NULL DEFAULT '1'
+ vk_history: REACTION_ID int unsigned NOT NULL DEFAULT '0'
+ vk_history: MESSAGE text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
+ vk_history: RAW text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
 EOD;
   parent::dbInstall($data);
  }
@@ -935,7 +1082,7 @@ function buildKeyBoardButton($name, $type, $payload = "", $color = "1", $data = 
 		}
 	}
 	$arr['type'] = $type;
-	if($payload == '') $payload = $name;
+	if(empty($payload )) $payload = $name;
 	$arr['payload'] = array('id' => $name, 'type' => 'button', 'data' => $payload);
 	if($type == "text") $arr['payload'] = json_encode($arr['payload'], JSON_UNESCAPED_UNICODE | JSON_NUMERIC_CHECK);
 	if($type != "location" and $type != "vkpay") $arr['label'] = $name;
@@ -962,7 +1109,7 @@ function buildUserKeyBoard($buttons){
 			continue;
 		}
 		$payload = '';
-		$keyb['buttons'][$line][] = $this->buildKeyBoardButton($button['TITLE'], $button['TYPE'], $button['DATA'], $button['COLOR'], $button['DATA'], '');
+		$keyb['buttons'][$line][] = $this->buildKeyBoardButton($button['TITLE'], $button['TYPE'], $button['DATA'], $button['COLOR']);
 		$but++;
 		if($but == $this->config['VK_COUNT_ROW']){
 			$but = 0;
@@ -975,7 +1122,7 @@ function buildUserKeyBoard($buttons){
 			$but = 0;
 		}
 		foreach($twobuttons as $twobutton){
-			$keyb['buttons'][$line][$but] = $this->buildKeyBoardButton($twobutton['TITLE'], $twobutton['TYPE'],'', '', $twobutton['DATA']);
+			$keyb['buttons'][$line][$but] = $this->buildKeyBoardButton($twobutton['TITLE'], $twobutton['TYPE'], '', '', $twobutton['DATA']);
 			$but++;
 			if($but > 1){
 				$line++;
@@ -1049,7 +1196,7 @@ function buildKeyBoard($buttons, $inline = true, $one_time = false, $lines = '')
 		$line++;
 		$keyb['buttons'][$line][0] = $vkpay;
 	}
-	if(DEBUG) $this->writeLog($keyb);
+	//$this->writeLog($keyb, true);
 	return json_encode($keyb, JSON_UNESCAPED_UNICODE);
 }
 
@@ -1139,17 +1286,17 @@ function downloadFile($url, $path) {
 }
 
 
-function sendMessage($user_id, $message = '',$keyboard='', $silent = false, $attachments = array()){
+function sendMessage($user_id, $message = '',$keyboard='', $silent = false, $attachments = array(), $reaction_id = 0){
+	if(!is_array($attachments)) $attachments = array();
 	$format_data = '';
 	$comma = substr_count($user_id, ",");
 	if($comma > 0){
-		$user = 'peer_ids';
 		if($comma > 100){
 			$positions = $this->splitAtNthOccurrence($user_id, ",", 100, false);
 			$user_id = $positions['before'];
 			$this->sendMessage($positions['after'], $message, $keyboard, $silent, $attachments);
 		}
-	} else $user = 'user_id';
+	}
 	$format = $this->extractFormattedTags($message);
 	if($format){
 		$message = $format['message'];
@@ -1158,18 +1305,22 @@ function sendMessage($user_id, $message = '',$keyboard='', $silent = false, $att
 					);
 		$format_data = json_encode($format_data, JSON_UNESCAPED_UNICODE);
 	}
-	return $this->vkApi_call('messages.send', array(
-		$user		=> $user_id,
+	$res = $this->vkApi_call('messages.send', array(
+		'peer_ids'	=> $user_id,
 		'message'	=> $message,
 		'keyboard'	=> $keyboard,
 		'silent'	=> $silent,
 		'format_data'=>$format_data,
 		'attachment'=> implode(',', $attachments),
 		'random_id'	=> 0,
-	));
+	), true);
+	$direction = 1;
+	if(isset($res['error'])) $direction = 2;
+	$this->saveData($res, $direction, $reaction_id);
+	if(isset($res['response'])) return array_pop($res['response'])['conversation_message_id'];
 }
 
-function sendMessageTo($users, $message = '',$keyboard='', $silent = false, $attachments = array()) {
+function sendMessageTo($users, $message = '',$keyboard='', $silent = false, $attachments = array(), $reaction_id = 0){
 	if(isset($users['ID'])) $users = [$users];
 	foreach($users as $user) {
 		$user_id = $user['USER_ID'];
@@ -1177,25 +1328,25 @@ function sendMessageTo($users, $message = '',$keyboard='', $silent = false, $att
 			if(is_array($keyboard)) $keyboard = json_encode($keyboard, JSON_UNESCAPED_UNICODE);
 		} else $keyboard = $this->getKeyb($user);
 		if (!$silent) $silent = $user['SILENT'];
-		$res = $this->sendMessage($user_id, $message, $keyboard, $silent, $attachments);
+		$res = $this->sendMessage($user_id, $message, $keyboard, $silent, $attachments, $reaction_id);
 	}
 	return $res;
 }
 
-function sendMessageToUser($user_id, $message = '',$keyboard='', $silent = false, $attachments = array()) {
+function sendMessageToUser($user_id, $message = '',$keyboard='', $silent = false, $attachments = array(), $reaction_id = 0) {
 	$user = SQLSelect("SELECT * FROM vk_user WHERE USER_ID='".$user_id."'");
-	return $this->sendMessageTo($user, $message, $keyboard,  $silent, $attachments);
+	return $this->sendMessageTo($user, $message, $keyboard,  $silent, $attachments, $reaction_id);
 }
-function sendMessageToAdmin($message, $keyboard = '', $silent = false, $attachments=array()) {
+function sendMessageToAdmin($message, $keyboard = '', $silent = false, $attachments=array(), $reaction_id = 0) {
 	$users = SQLSelect("SELECT * FROM vk_user WHERE ADMIN='1'");
-	return $this->sendMessageTo($users, $message, $keyboard, $silent, $attachments);
+	return $this->sendMessageTo($users, $message, $keyboard, $silent, $attachments, $reaction_id);
 }
-function sendMessageToAll($message, $keyboard = '', $silent = false, $attachments=array()) {
+function sendMessageToAll($message, $keyboard = '', $silent = false, $attachments=array(), $reaction_id = 0) {
     $users = SQLSelect("SELECT * FROM vk_user");
-	return $this->sendMessageTo($users, $message, $keyboard, $silent, $attachments);
+	return $this->sendMessageTo($users, $message, $keyboard, $silent, $attachments, $reaction_id);
 } 
 
-function sendImageTo($image, $users, $message = '',$keyboard='', $silent = false, $attachments = array()) {
+function sendImageTo($image, $users, $message = '',$keyboard='', $silent = false, $attachments = array(), $reaction_id = 0) {
 	$this->getConfig();
 	if(isset($users['ID'])) $users = [$users];
 	if($image){
@@ -1207,25 +1358,25 @@ function sendImageTo($image, $users, $message = '',$keyboard='', $silent = false
 			if(is_array($keyboard)) $keyboard = json_encode($keyboard, JSON_UNESCAPED_UNICODE);
 		} else $keyboard = $this->getKeyb($user);
 		if (!$silent) $silent = $user['SILENT'];
-		$res = $this->sendMessage($user_id, $message, $keyboard, $silent, $attachments);
+		$res = $this->sendMessage($user_id, $message, $keyboard, $silent, $attachments, $reaction_id);
 	}
 	return $res;
 }
 
-function sendImageToUser($user_id, $image, $message = '',$keyboard='', $silent = false, $attachments = array()) {
+function sendImageToUser($user_id, $image, $message = '',$keyboard='', $silent = false, $attachments = array(), $reaction_id = 0) {
 	$user = SQLSelect("SELECT * FROM vk_user WHERE USER_ID='".$user_id."'");
-	return $this->sendImageTo($image, $user, $message, $keyboard, $silent, $attachments);
+	return $this->sendImageTo($image, $user, $message, $keyboard, $silent, $attachments, $reaction_id);
 }
-function sendImageToAdmin($image, $message, $keyboard = '', $silent = false, $attachments=array()) {
+function sendImageToAdmin($image, $message, $keyboard = '', $silent = false, $attachments=array(), $reaction_id = 0) {
 	$users = SQLSelect("SELECT * FROM vk_user WHERE ADMIN='1'");
-	return $this->sendImageTo($image, $users, $message, $keyboard, $silent, $attachments);
+	return $this->sendImageTo($image, $users, $message, $keyboard, $silent, $attachments, $reaction_id);
 }
-function sendImageToAll($image, $message, $keyboard = '', $silent = false, $attachments=array()) {
+function sendImageToAll($image, $message, $keyboard = '', $silent = false, $attachments=array(), $reaction_id = 0) {
     $users = SQLSelect("SELECT * FROM vk_user");
-	return $this->sendImageTo($image, users, $message, $keyboard, $silent, $attachments);
+	return $this->sendImageTo($image, users, $message, $keyboard, $silent, $attachments, $reaction_id);
 }
 
-function sendFileTo($file, $users, $message = '',$keyboard='', $silent = false, $attachments = array()) {
+function sendFileTo($file, $users, $message = '',$keyboard='', $silent = false, $attachments = array(), $reaction_id = 0) {
 	if(isset($users['ID'])) $users = [$users];
 	if(!$file){
 		$this->writeLog('Файл отсутствует');
@@ -1238,25 +1389,25 @@ function sendFileTo($file, $users, $message = '',$keyboard='', $silent = false, 
 			if(is_array($keyboard)) $keyboard = json_encode($keyboard, JSON_UNESCAPED_UNICODE);
 		} else $keyboard = $this->getKeyb($user);
 		if (!$silent) $silent = $user['SILENT'];
-		$res = $this->sendMessage($user_id, $message, $keyboard, $silent, $attachments);
+		$res = $this->sendMessage($user_id, $message, $keyboard, $silent, $attachments, $reaction_id);
 	}
 	return $res;
 }
 
-function sendFileToUser($user_id, $file, $message = '',$keyboard='', $silent = false, $attachments = array()) {
+function sendFileToUser($user_id, $file, $message = '',$keyboard='', $silent = false, $attachments = array(), $reaction_id = 0) {
 	$user = SQLSelect("SELECT * FROM vk_user WHERE USER_ID='".$user_id."'");
-	return $this->sendFileTo($file, $user, $message, $keyboard, $silent, $attachments);
+	return $this->sendFileTo($file, $user, $message, $keyboard, $silent, $attachments, $reaction_id);
 }
-function sendFileToAdmin($file, $message, $keyboard = '', $silent = false, $attachments=array()) {
+function sendFileToAdmin($file, $message, $keyboard = '', $silent = false, $attachments=array(), $reaction_id = 0) {
 	$users = SQLSelect("SELECT * FROM vk_user WHERE ADMIN='1'");
-	return $this->sendFileTo($file, $users, $message, $keyboard, $silent, $attachments);
+	return $this->sendFileTo($file, $users, $message, $keyboard, $silent, $attachments, $reaction_id);
 }
-function sendFileToAll($file, $message, $keyboard = '', $silent = false, $attachments=array()) {
+function sendFileToAll($file, $message, $keyboard = '', $silent = false, $attachments=array(), $reaction_id = 0) {
     $users = SQLSelect("SELECT * FROM vk_user");
-	return $this->sendFileTo($file, users, $message, $keyboard, $silent, $attachments);
+	return $this->sendFileTo($file, users, $message, $keyboard, $silent, $attachments, $reaction_id);
 }
 
-function sendVoiceTo($voice, $users, $message = '',$keyboard='', $silent = false, $attachments = array()) {
+function sendVoiceTo($voice, $users, $message = '',$keyboard='', $silent = false, $attachments = array(), $reaction_id = 0) {
 	if(isset($users['ID'])) $users = [$users];
 	if(!$voice){
 		$this->writeLog('Файл отсутствует');
@@ -1269,27 +1420,27 @@ function sendVoiceTo($voice, $users, $message = '',$keyboard='', $silent = false
 			if(is_array($keyboard)) $keyboard = json_encode($keyboard, JSON_UNESCAPED_UNICODE);
 		} else $keyboard = $this->getKeyb($user);
 		if (!$silent) $silent = $user['SILENT'];
-		$res = $this->sendMessage($user_id, $message, $keyboard, $silent, $attachments);
+		$res = $this->sendMessage($user_id, $message, $keyboard, $silent, $attachments, $reaction_id);
 	}
 	return $res;
 }
 
-function sendVoiceToUser($user_id, $voice, $message = '',$keyboard='', $silent = false, $attachments = array()) {
+function sendVoiceToUser($user_id, $voice, $message = '',$keyboard='', $silent = false, $attachments = array(), $reaction_id = 0) {
 	$user = SQLSelect("SELECT * FROM vk_user WHERE USER_ID='".$user_id."'");
-	return $this->sendVoiceTo($voice, $user, $message, $keyboard, $silent, $attachments);
+	return $this->sendVoiceTo($voice, $user, $message, $keyboard, $silent, $attachments, $reaction_id);
 }
-function sendVoiceToAdmin($voice, $message, $keyboard = '', $silent = false, $attachments=array()) {
+function sendVoiceToAdmin($voice, $message, $keyboard = '', $silent = false, $attachments=array(), $reaction_id = 0) {
 	$users = SQLSelect("SELECT * FROM vk_user WHERE ADMIN='1'");
-	return $this->sendVoiceTo($voice, $users, $message, $keyboard, $silent, $attachments);
+	return $this->sendVoiceTo($voice, $users, $message, $keyboard, $silent, $attachments, $reaction_id);
 }
-function sendVoiceToAll($voice, $message, $keyboard = '', $silent = false, $attachments=array()) {
+function sendVoiceToAll($voice, $message, $keyboard = '', $silent = false, $attachments=array(), $reaction_id = 0) {
     $users = SQLSelect("SELECT * FROM vk_user");
-	return $this->sendVoiceTo($voice, users, $message, $keyboard, $silent, $attachments);
+	return $this->sendVoiceTo($voice, users, $message, $keyboard, $silent, $attachments, $reaction_id);
 }
 
 
 //отправка сообщения (клавиатура формируется по первому пользователю) большому количеству пользователей
-function sendMessageTos($users, $message = '',$keyboard='', $silent = false, $attachments = array()) {
+function sendMessageTos($users, $message = '',$keyboard='', $silent = false, $attachments = array(), $reaction_id = 0) {
 	if(is_array($keyboard)) $keyboard = json_encode($keyboard, JSON_UNESCAPED_UNICODE);
 	$sids = '';
 	$ids = '';
@@ -1301,30 +1452,30 @@ function sendMessageTos($users, $message = '',$keyboard='', $silent = false, $at
   }
   if($ids != ''){
 	  $ids = rtrim($ids, ",");
-	  $this->sendMessage($ids, $message, $keyboard, $silent, $attachments);
+	  $this->sendMessage($ids, $message, $keyboard, $silent, $attachments, $reaction_id);
   }
   if($sids != ''){
 	  $sids = rtrim($sids, ",");
-	  $this->sendMessage($sids, $message, $keyboard, true, $attachments);
+	  $this->sendMessage($sids, $message, $keyboard, true, $attachments, $reaction_id);
   }
 }
 
-function sendMessageToUsers($message,$keyboard='', $silent = false, $attachments = array()) {
+function sendMessageToUsers($message,$keyboard='', $silent = false, $attachments = array(), $reaction_id = 0) {
 	$users = SQLSelect("SELECT * FROM vk_user WHERE ADMIN='0'");
-	return $this->sendMessageTos($image, $user, $message, $keyboard, $silent, $attachments);
+	return $this->sendMessageTos($image, $user, $message, $keyboard, $silent, $attachments, $reaction_id);
 }
 
-function sendImageTos($image, $users, $message = '',$keyboard='', $silent = false, $attachments = array()) {
+function sendImageTos($image, $users, $message = '',$keyboard='', $silent = false, $attachments = array(), $reaction_id = 0) {
 	$this->getConfig();
 	if($image) {
 		$attachments = $this->attachPhoto($this->config['GROUP_ID'], $image);
 	}
-	return sendMessageTos($users, $message, $keyboard, $silent, $attachments);
+	return sendMessageTos($users, $message, $keyboard, $silent, $attachments, $reaction_id);
 }
 
-function sendImageToUsers($image, $message, $keyboard = '', $silent = false, $attachments=array()) {
+function sendImageToUsers($image, $message, $keyboard = '', $silent = false, $attachments=array(), $reaction_id = 0) {
 	$users = SQLSelect("SELECT * FROM vk_user WHERE ADMIN='1'");
-	return $this->sendImageTo($image, $users, $message, $keyboard, $silent, $attachments);
+	return $this->sendImageTo($image, $users, $message, $keyboard, $silent, $attachments, $reaction_id);
 }
 
 function messageEdit($user_id, $cmid, $message = '',$keyboard='', $silent = false, $attachments = array()){
@@ -1356,6 +1507,13 @@ function messageDelete($user_id, $event_id){
 	));
 }
 
+function messageDeleteByID($user_id, $message_id){
+	return $this->vkApi_call('messages.delete', array(
+		'peer_id'		=> $user_id,
+		'message_ids'	=> $message_id,
+		'delete_for_all'=> true,
+	));
+}
 
 function sendAnswerCallbackQuery($user_id, $event_id, $text = ''){
 	return $this->vkApi_call('messages.sendMessageEventAnswer', array(
@@ -1375,7 +1533,74 @@ function sendAction($user_id, $type = 'typing'){
 		'type'=> $type,
 		));
 }
- 
+
+function sendReaction($user_id, $cmid, $reaction_id){
+	return $this->vkApi_call('messages.sendReaction', array(
+		'peer_id'		=> $user_id,
+		'cmid'			=> $cmid,
+		'reaction_id'	=> $reaction_id,
+	));
+} 
+
+function saveData($data, $direction, $reaction_id = 0){
+	$rec["DIRECTION"] = $direction;
+	$rec["USER_ID"] = 0;
+	$rec["CREATED"] = date("Y-m-d H:i:s");
+	$rec["REACTION_ID"] = $reaction_id;
+	$rec["MESSAGE_ID"] = 0;
+		
+	if (isset($data['data'])){
+		$rec["MESSAGE"] = json_encode($data['data']['message']);
+		$rec["RAW"] = json_encode($data['data']);
+		if(isset($data['response'])){
+			foreach($data['response'] as $res){
+				$rec["USER_ID"] = $res['peer_id'];
+				$rec["MESSAGE_ID"] = $res['conversation_message_id'];
+				SQLInsert("vk_history", $rec);
+			}
+		} else{
+			if(substr_count($data['data']['peer_ids'], ",")) $rec["USER_ID"] = strstr($data['data']['peer_ids'], ',', true);
+			else $rec["USER_ID"] = $data['data']['peer_ids'];
+			SQLInsert("vk_history", $rec);
+		}
+	} else if(isset($data['object'])){
+		$message = $data['object']['message'];
+		$rec["USER_ID"] = $message['from_id'];
+		$rec["MESSAGE"] = !empty($message['text']) ? json_encode($message['text']) : '';
+		$rec["RAW"] = json_encode($data);
+		$rec["MESSAGE_ID"] = $message['conversation_message_id'];
+		SQLInsert("vk_history", $rec);
+	}
+}
+
+function resendData(){
+	$res = SQLSelect("SELECT * FROM vk_history WHERE DIRECTION=2");
+	foreach($res as $data) {
+		$message = json_decode($data['RAW'],true);
+		$message['message'] .= " (повторная отправка от ".$data['CREATED'].")";
+		$send = $this->vkApi_call('messages.send', $message, true);
+		if (!isset($send['error'])){
+			$data['DIRECTION'] = 3;
+			SQLUpdate("vk_history", $data);
+		}
+	}
+}
+
+function utf8_4byte_to_2byte($string) {
+    // Преобразование 4-байтных символов в 2-байтные
+    return preg_replace_callback('/[\xF0-\xF7][\x80-\xBF]{3}/', function ($matches) {
+        $bytes = unpack('C*', $matches[0]);
+        return mb_chr(((($bytes[1] & 0x07) << 18) | (($bytes[2] & 0x3F) << 12) | (($bytes[3] & 0x3F) << 6) | ($bytes[4] & 0x3F)));
+    }, $string);
+}
+
+function setReaction($user_id, $message_id, $reaction_id){
+	$req = SQLSelectOne("SELECT * FROM vk_history WHERE USER_ID=".$user_id." and MESSAGE_ID='".$message_id."'");
+	if($req){
+		$req['REACTION_ID'] = $reaction_id;
+		SQLUpdate("vk_history", $req);
+	}
+}
 
 //Функции, созданные ИИ
 function splitAtNthOccurrence($string, $substring, $n, $substron = true) {
@@ -1499,42 +1724,52 @@ function processNode($node, &$cleanText, &$items, $tagTypes, $parentOffset = 0) 
 }
 
 
-
-
 //API//
 
-function vkApi_call($method, $params = array()) {
+function vkApi_call($method, $params = array(), $fullans = false) {
   $this->getParams();
   $params['access_token'] = $this->config['API_KEY'];
   $params['group_id'] = $this->config['GROUP_ID'];
   $params['v'] = V_API;
   $query = http_build_query($params);
   $url = 'https://api.vk.com/method/'.$method.'?'.$query;
-  if(DEBUG) $this->writeLog($params);
+  $this->writeLog($params, true);
   $curl = curl_init($url);
   curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+  curl_setopt($curl, CURLOPT_TIMEOUT, 3);
+  curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+  curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
   $json = curl_exec($curl);
   $error = curl_error($curl);
-  if ($error) {
-    $this->log_error($error);
-  }
   curl_close($curl);
   $response = json_decode($json, true);
-  $this->writeLog($response);
-  if (!$response || !isset($response['response'])) {
+  $this->writeLog($response, true);
+  $response['data'] = $params;
+  if ($error) {
+    $this->log_error($error);
+	$response['error'] = $error;
+  } else if(!$response or !isset($response['response'])) {
     $this->log_error($json);
-  } else return $response['response'];
+	$response['error'] = $json;
+  }
+  if($fullans or $error) return $response;
+  return $response['response'];
 }
 
-function uploadPhoto($user_id, $file_name) {
+function uploadPhoto($user_id, $file_name, $retry = false) {
   $upload_server_response = $this->vkApi_photosGetMessagesUploadServer($user_id);
   $upload_response = $this->vkApi_upload($upload_server_response['upload_url'], $file_name);
   $save_response = $this->vkApi_photosSaveMessagesPhoto($upload_response['photo'], $upload_response['server'], $upload_response['hash']);
+  if(!$save_response){
+	  if(!$retry) return $this->uploadPhoto($user_id, $file_name, true);
+	  return false;
+  }
   return array_pop($save_response);
 }
 
 function attachPhoto($id, $image){
 	$photo = $this->uploadPhoto($id, $image);
+	if(!$photo) return false;
 	return array(
 		'photo'.$photo['owner_id'].'_'.$photo['id'],
 	);
@@ -1629,7 +1864,7 @@ function log_msg($message) {
   $trace = debug_backtrace();
   $function_name = isset($trace[1]) ? $trace[1]['function'] : '-';
   $mark = '[' . $function_name . ']';
-  $this->writeLog('[ERROR] ' . '$mark' . $message);
+  $this->writeLog('[ERROR] ' . $mark . $message);
 }
 
 function log_error($message) {
@@ -1639,16 +1874,14 @@ function log_error($message) {
   $trace = debug_backtrace();
   $function_name = isset($trace[1]) ? $trace[1]['function'] : '-';
   $mark = '[' . $function_name . ']';
-  $this->writeLog('[ERROR] ' . '$mark' . $message);
+  $this->writeLog('[ERROR] ' . $mark . $message);
 }
 
-function writeLog($message) {
+function writeLog($message, $debug = false) {
+	if($debug and !DEBUG) return;
 	if ($this->debug) {
 		DebMes($message, $this->name, JSON_UNESCAPED_UNICODE);
 	}
 }
-
-//Функции "на всякай случай"
-
 
 }

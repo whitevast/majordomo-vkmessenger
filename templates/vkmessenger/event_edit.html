@@ -66,6 +66,7 @@ $(window).load(function() {
             <option value="7"[#if TYPE_EVENT="7"#] selected[#endif#]><#LANG_VK_EVENT_GRAFFITI#>
             <option value="8"[#if TYPE_EVENT="8"#] selected[#endif#]><#LANG_VK_EVENT_LOCATION#>
             <option value="9"[#if TYPE_EVENT="9"#] selected[#endif#]>Callback
+			<option value="10"[#if TYPE_EVENT="10"#] selected[#endif#]><#LANG_VK_EVENT_REACTION#>
         </select>
         </div>
 </div>
@@ -88,7 +89,10 @@ $(window).load(function() {
 <div class="col-lg-8 panel panel-info">
     <div class="panel-body">	
 	$text - текст полученного сообщения;<br>
-    $user_id ($chat_id) - идентификатор отправителя
+    $user_id ($chat_id) - идентификатор отправителя;<br>
+	$message_id - идентификатор сообщения;<br>
+	Отправка сообщения обратно: <br>
+	$this->sendMessageToUser($user_id, $msg);<br>
 	</div>
 </div>
 </div>
@@ -98,7 +102,10 @@ $(window).load(function() {
 <div class="col-lg-8 panel panel-info">
     <div class="panel-body">	
 	$user_id ($chat_id) - идентификатор отправителя;<br>
-	$file_path - путь к полученному файлу
+	$message_id - идентификатор сообщения;<br>
+	$file_path - путь к полученному файлу<br>
+	Отправка сообщения обратно: <br>
+	$this->sendMessageToUser($user_id, $msg);<br>
 	</div>
 </div>
 </div>
@@ -108,7 +115,10 @@ $(window).load(function() {
 <div class="col-lg-8 panel panel-info">
     <div class="panel-body">	
 	$user_id ($chat_id) - идентификатор отправителя;<br>
-	$file_path - URL отправленного аудио
+	$message_id - идентификатор сообщения;<br>
+	$file_path - URL отправленного аудио<br>
+	Отправка сообщения обратно: <br>
+	$this->sendMessageToUser($user_id, $msg);<br>
 	</div>
 </div>
 </div>
@@ -118,7 +128,10 @@ $(window).load(function() {
 <div class="col-lg-8 panel panel-info">
     <div class="panel-body">	
 	$user_id ($chat_id) - идентификатор отправителя;<br>
-	$file_path - URL отправленного аудио
+	$message_id - идентификатор сообщения;<br>
+	$file_path - URL отправленного аудио<br>
+	Отправка сообщения обратно: <br>
+	$this->sendMessageToUser($user_id, $msg);<br>
 	</div>
 </div>
 </div>
@@ -128,7 +141,10 @@ $(window).load(function() {
 <div class="col-lg-8 panel panel-info">
     <div class="panel-body">	
 	$user_id ($chat_id) - идентификатор отправителя;<br>
-	$file_path - URL превью отправленного видео
+	$message_id - идентификатор сообщения;<br>
+	$file_path - URL превью отправленного видео<br>
+	Отправка сообщения обратно: <br>
+	$this->sendMessageToUser($user_id, $msg);<br>
 	</div>
 </div>
 </div>
@@ -138,7 +154,10 @@ $(window).load(function() {
 <div class="col-lg-8 panel panel-info">
     <div class="panel-body">	
 	$user_id ($chat_id) - идентификатор отправителя;<br>
-	$file_path - путь к полученному файлу
+	$message_id - идентификатор сообщения;<br>
+	$file_path - путь к полученному файлу<br>
+	Отправка сообщения обратно: <br>
+	$this->sendMessageToUser($user_id, $msg);<br>
 	</div>
 </div>
 </div>
@@ -148,7 +167,10 @@ $(window).load(function() {
 <div class="col-lg-8 panel panel-info">
     <div class="panel-body">	
 	$user_id ($chat_id) - идентификатор отправителя;<br>
-	$file_path - идентификатор стикера
+	$message_id - идентификатор сообщения;<br>
+	$file_path - идентификатор стикера<br>
+	Отправка сообщения обратно: <br>
+	$this->sendMessageToUser($user_id, $msg);<br>
 	</div>
 </div>
 </div>
@@ -158,9 +180,12 @@ $(window).load(function() {
 <div class="col-lg-8 panel panel-info">
     <div class="panel-body">	
 	$user_id ($chat_id) - идентификатор отправителя;<br>
+	$message_id - идентификатор сообщения;<br>
 	$latitude - широта;<br>
 	$longitude - долгота;<br>
-	$city - город
+	$city - город<br>
+	Отправка сообщения обратно: <br>
+	$this->sendMessageToUser($user_id, $msg);<br>
 	</div>
 </div>
 </div>
@@ -170,21 +195,31 @@ $(window).load(function() {
 <div class="col-lg-8 panel panel-info">
     <div class="panel-body">	
 	$user_id ($chat_id) - идентификатор отправителя;<br>
-	$callback - ответ на запрос;<br>
-	$message_id - message_id сообщения с запросом;<br>
-	$event_id ($callback_id) - идентификатор запроса (для sendAnswerCallbackQuery)
+	$message_id - идентификатор сообщения;<br>
+	$payload ($callback) - полезные данные, переданные в параметре $payload;<br>
+	$event_id ($callback_id) - идентификатор запроса (для sendAnswerCallbackQuery).<br>
+	Отправка сообщения обратно: <br>
+	$this->sendMessageToUser($user_id, $msg);<br>
 	</div>
 </div>
 </div>
 </div>
+<div class="help" id="type_block_10" [#if TYPE_EVENT!="10"#] style="display:none"[#endif#]> 
 <div class="form-group"> <label class="col-lg-4 control-label"></label>
 <div class="col-lg-8 panel panel-info">
-<div class="panel-body">
-Отправка сообщения обратно: <br>
-$this->sendMessageToUser($user_id, $msg);<br>
-Отправка фото:<br>
-$this->sendPhotoToUser($user_id, путь_к_фото, $msg(опционально));
+    <div class="panel-body">	
+	$text - текст сообщения, на которое была реакция;<br>
+	$user_id ($chat_id) - идентификатор отправителя;<br>
+	$message_id - идентификатор сообщения, на которое пришла реакция;<br>
+	$reaction_id - идентификатор реакции.<br>
+	Отправка сообщения обратно: <br>
+	$this->sendMessageToUser($user_id, $msg);<br>
+	</div>
 </div>
+ <div class="clearfix hidden-xs hidden-sm"></div> 
+<!-- REACTION_ID -->
+ <label class="control-label"><#LANG_VK_EVENT_REACTION_ID#></label>
+ <div class="col-lg-8"><input  type="text" name="reaction_id" value="[#REACTION_ID#]" class="form-control input"></div>
 </div>
 </div>
 <!-- CODE (text) -->
