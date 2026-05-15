@@ -103,7 +103,7 @@
 		<p><b>Callback</b><br>
 		Событие <b>Callback</b> используется для определения нажатия callback кнопок. Идентификация происходит по информации из параметра $payload функции buildKeyBoardButton(). Если $payload при создании кнопки задан не был, туда добавляется имя кнопки.</br></p>
 		<p><b>Реакции</b></br>
-		Можно отлавливать реакции (лайки) на определённые сообщения, отправленные модулем. Например, МДМ отправляет сообщение: "Зажечь камин?". Пользователь при этом ставит 🔥, и камин зажигается...</br>
+		Можно отлавливать реакции (лайки) на определённые сообщения, отправленные модулем. Например, МДМ отправляет сообщение: "Зажечь камин?". Пользователь ставит 🔥 на это сообщение, и камин зажигается...</br>
 		Существует 40 реакций и на каждую из них можно назначить какое-либо действие.</br>
 		Для привязки обработчика реакций к сообщению следуем по следующему алгоритму:<br>
 		<strong>1.</strong> Создаем Событие Реакции, задаём номер (например, 3). К этому номеру будем привязывать сообщения. Пишем необходимый код, например:
@@ -119,7 +119,7 @@
 		Здесь важно проследить, что все необходимые вам параметры заполнены.<br>
 		<strong>б)</strong> Отправить сообщение через API с заданием reaction:<br>
 		<code style="display:block">
-		callAPI('/api/module/vkmessenger','GET',array('command'=>'sendMessage','user_id'=>139809588,'message'=>'Зажечь камин?','reaction'=>3));
+		callAPI('/api/module/vkmessenger','GET',array('command'=>'sendMessage','user'=>139809588,'message'=>'Зажечь камин?','reaction'=>3));
 		</code>
 		<strong>в)</strong> Функции отправки возвращают ID отправленного сообщения, его можно передать в специальную функцию<br>
 		<strong>setReaction($user_id, $messge_id, $reaction_id):</strong>
@@ -140,7 +140,7 @@
 		</code><strong>Номер События Реакции 101 выполняется во всех остальных случаях</strong><br>
 		Если создать Событие Реакции с номером 101, в нём можно обрабатывать реакции на все, не привязанные к другим реакциям, сообщения. В том числе на свои.<br>
 		Также, можно <strong>отправлять</strong> реакции на входящие сообщения с помощью функции <strong>sendReaction($user_id, $message_id, $reaction_id)</strong>;</br>
-		Здесь <strong>$user_id</strong> и <strong>$message_id</strong> мы получаем из события, а <strong>$reaction_id</strong> соответствует коду из раздела <strong>Реакции</strong>.</br>
+		Здесь <strong>$user_id</strong> и <strong>$message_id</strong> мы получаем из события, а <strong>$reaction_id</strong> соответствует коду из раздела справки <strong>Реакции</strong>.</br>
 		Отправлять можно реакции с <strong>1 до 16</strong>, получать можно все 40. Снятие реакции - тоже реакция с номером <strong>0</strong>!</p>
 		</div>
 		</div>
@@ -247,9 +247,9 @@
 		Или через API:
 		<code style="display:block">
         $text = "test message";<br>
-		$keyboard = ...
-		callAPI('/api/module/vkmessenger','GET',array('command'=>'sendMessage','user_id'=>139809588,'message'=>$text,));<br>
-        callAPI('/api/module/vkmessenger','GET',array('command'=>'sendMessage','user_id'=>139809588,'message'=>$text, 'silent'=>true)); //без звука<br>
+		$keyboard = ...;<br>
+		callAPI('/api/module/vkmessenger','GET',array('command'=>'sendMessage','user'=>139809588,'message'=>$text));<br>
+        callAPI('/api/module/vkmessenger','GET',array('command'=>'sendMessage','user'=>139809588,'message'=>$text, 'silent'=>true)); //без звука<br>
 		callAPI('/api/module/vkmessenger','GET',array('command'=>'sendMessageAdmin','message'=>$text, 'keyboard'=>$keyboard)); //c клавиатурой<br>
         callAPI('/api/module/vkmessenger','GET',array('command'=>'sendMessageAdmin','message'=>$text, 'silent'=>true)); //без звука<br>
 		callAPI('/api/module/vkmessenger','GET',array('command'=>'sendMessageAll','message'=>$text,));<br>
@@ -270,8 +270,8 @@
 		<code style="display:block">
         $img = '/var/www/images/trees.jpg';<br>
 		$keyboard = ...
-		callAPI('/api/module/vkmessenger','GET',array('command'=>'sendImage','user_id'=>139809588,'image'=>$img));<br>
-        callAPI('/api/module/vkmessenger','GET',array('command'=>'sendImage','user_id'=>139809588,'image'=>$img,'message'=>'Описание', 'silent'=>true)); //без звука<br>
+		callAPI('/api/module/vkmessenger','GET',array('command'=>'sendImage','user'=>139809588,'image'=>$img));<br>
+        callAPI('/api/module/vkmessenger','GET',array('command'=>'sendImage','user'=>139809588,'image'=>$img,'message'=>'Описание', 'silent'=>true)); //без звука<br>
 		callAPI('/api/module/vkmessenger','GET',array('command'=>'sendImageAdmin','image'=>$img, 'keyboard'=>$keyboard)); //c клавиатурой<br>
         callAPI('/api/module/vkmessenger','GET',array('command'=>'sendImageAdmin','image'=>$img,'message'=>'Описание', 'silent'=>true)); //без звука<br>
 		callAPI('/api/module/vkmessenger','GET',array('command'=>'sendImageAll','image'=>$img));<br>

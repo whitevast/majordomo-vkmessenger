@@ -306,7 +306,7 @@ function admin(&$out) {
   }
   $update_keyboard = gr('update_keyboard');
   if ($update_keyboard) {
-  	$this->sendMessageToAdmin("del me", '', true);
+  	$this->sendMessageToAll("del me", '', true);
   	$this->redirect("?tab=cmd");
   }
   if ($this->data_source=='vkmessenger' || $this->data_source=='') {
@@ -370,8 +370,6 @@ function admin(&$out) {
 		$this->import_event($out);
 		$this->redirect("?tab=events");
 	}
-	
-	
 	
 	if($this->view_mode == '' || $this->view_mode == 'search_ms') {
 		if($this->tab == 'cmd') {
@@ -505,17 +503,14 @@ function api($params) {
     $command = $params['command'];
     if ($command == "download"){
 		$this->downloadFile($params['url'], $params['path']);
-		$this->writeLog($params['url']);
-		$this->writeLog($params['path']);
 	} else if($command == "getapi"){
 		$res = $this->vkApi_call($params['method'], $params['data']);
-		$this->writeLog($res);
 	} else if($command == "sendMessage"){
 		$keyboard = $params['keyboard'] ?? '';
 		$silent = $params['silent'] ?? false;
 		$reaction_id = $params['reaction'] ?? 0;
 		if($params['message'] != '' )
-			$this->sendMessageToUser($params['user_id'], $params['message'], $keyboard, $silent, array(), $reaction_id);
+			$this->sendMessageToUser($params['user'], $params['message'], $keyboard, $silent, array(), $reaction_id);
 	} else if($command == "sendMessageAdmin"){
 		$keyboard = $params['keyboard'] ?? '';
 		$silent = $params['silent'] ?? false;
@@ -533,7 +528,7 @@ function api($params) {
 		$silent = $params['silent'] ?? false;
 		$reaction_id = $params['reaction'] ?? 0;
 		if($params['image'] != '' && file_exists($params['image']))
-			$this->sendImageToUser($params['user_id'], $params['image'], $params['message'], $keyboard, $silent, array(), $reaction_id);
+			$this->sendImageToUser($params['user'], $params['image'], $params['message'], $keyboard, $silent, array(), $reaction_id);
 	} else if($command == "sendImageAdmin"){
 		$keyboard = $params['keyboard'] ?? '';
 		$silent = $params['silent'] ?? false;
@@ -802,7 +797,6 @@ function api($params) {
 		if($user['CMD'] == 1) {
 			// Проверим, назначена ли обработка реакции на сообщение
 			$reaction = SQLSelectOne("SELECT * FROM vk_history WHERE USER_ID=".$user['USER_ID']." AND MESSAGE_ID=".$message_id." AND REACTION_ID!=0");
-			print_r($reaction);
 			if(!empty($reaction)){
 				$text = !empty($reaction['MESSAGE']) ? json_decode($reaction['MESSAGE']) : '';
 				// Выполним события при получении реакции
@@ -851,13 +845,10 @@ function api($params) {
 					if ($level >= $user['HISTORY_SILENT']) $silent = false;
 					else $silent = true;
 					if(!empty($image)){
-						callAPI('/api/module/vkmessenger','GET',array('command'=>'sendImage','user_id'=>$user['USER_ID'],'message'=>$message,'imaage'=>$image,'silent'=>$silent,'reaction'=>100));
+						callAPI('/api/module/vkmessenger','GET',array('command'=>'sendImage','user'=>$user['USER_ID'],'message'=>$message,'image'=>$image,'silent'=>$silent,'reaction'=>100));
 					} else {
-						callAPI('/api/module/vkmessenger','GET',array('command'=>'sendMessage','user_id'=>$user['USER_ID'],'message'=>$message, 'silent'=>$silent, 'reaction'=>100));
+						callAPI('/api/module/vkmessenger','GET',array('command'=>'sendMessage','user'=>$user['USER_ID'],'message'=>$message, 'silent'=>$silent, 'reaction'=>100));
 					}
-					//$url=BASE_URL."/ajax/vkmessenger.html?sendMessage=1&user=".$user['USER_ID']."&text=".urlencode($message)."&image=".urlencode($image)."&silent=".$silent;
-					//getURLBackground($url,0);
-					//$this->sendMessageTo($user, $message, '', $silent);
 				}
 			}
 		}
@@ -870,7 +861,6 @@ function api($params) {
  
 // Find data in module
 function findData($data) {
-
 	$res = array();
 	// cmd
 	$cmds = SQLSelect("SELECT `ID`,`TITLE`, `DESCRIPTION` FROM `vk_cmd` where `TITLE` like '%" . DBSafe($data) . "%' OR `DESCRIPTION` like '%" . DBSafe($data) . "%' OR `CODE` like '%" . DBSafe($data) . "%'  order by TITLE");
@@ -1034,14 +1024,7 @@ function getKeyb($user) {
 	else $keyb = $this->buildUserKeyBoard($button);
 	return $keyb;
 }
-/*type:
-0 - text
-1 - location
-2 - vkpay
-3 - open_link
-4 - open_app
-5 - callback
-*/
+
 function buildKeyBoardButton($name, $type, $payload = "", $color = "1", $data = ""){
 	if(is_numeric($type)){
 		switch($type){
@@ -1136,14 +1119,7 @@ function buildUserKeyBoard($buttons){
 	}
 	return json_encode($keyb, JSON_UNESCAPED_UNICODE | JSON_NUMERIC_CHECK);
 }
-/*type:
-text
-location
-vkpay
-open_link
-open_app
-callback
-*/
+
 function buildKeyBoard($buttons, $inline = true, $one_time = false, $lines = ''){
 	$this->getConfig();
 	$buts = false;
@@ -1252,7 +1228,7 @@ function usersUpdate($forced = false){
 					$dbuser['UPDATED'] = date('Y-m-d H:i:s');
 					SQLUpdate('vk_user', $dbuser);
 					$file_path = CASH_PATH . $vkuser["id"] . ".jpg";
-					$this->downloadFile($vkuser['photo_max'], $file_path);
+					callAPI('/api/module/vkmessenger','GET',array('command'=>'download','url'=>$vkuser['photo_max'],'path'=>$file_path));
 				}
 			}
 		}
@@ -1263,12 +1239,14 @@ function usersUpdate($forced = false){
 			$user['UPDATED'] = date('Y-m-d H:i:s');
 			SQLInsert('vk_user', $user);
 			$file_path = CASH_PATH . $vkuser["id"] . ".jpg";
-			$this->downloadFile($vkuser['photo_max'], $file_path);
+			callAPI('/api/module/vkmessenger','GET',array('command'=>'download','url'=>$vkuser['photo_max'],'path'=>$file_path));
 		}
 	}
 	$group = $this->vkApi_call('groups.getById');
-	$group = $group['groups'][0];
-	$this->downloadFile($group['photo_200'], CASH_PATH . $group['id'] . ".jpg");
+	if(isset($group['groups'][0])){
+		$group = $group['groups'][0];
+		callAPI('/api/module/vkmessenger','GET',array('command'=>'download','url'=>$group['photo_200'],'path'=>CASH_PATH . $group['id'] . ".jpg"));
+	}
 }
 
 function downloadFile($url, $path) {
@@ -1586,14 +1564,6 @@ function resendData(){
 	}
 }
 
-function utf8_4byte_to_2byte($string) {
-    // Преобразование 4-байтных символов в 2-байтные
-    return preg_replace_callback('/[\xF0-\xF7][\x80-\xBF]{3}/', function ($matches) {
-        $bytes = unpack('C*', $matches[0]);
-        return mb_chr(((($bytes[1] & 0x07) << 18) | (($bytes[2] & 0x3F) << 12) | (($bytes[3] & 0x3F) << 6) | ($bytes[4] & 0x3F)));
-    }, $string);
-}
-
 function setReaction($user_id, $message_id, $reaction_id){
 	$req = SQLSelectOne("SELECT * FROM vk_history WHERE USER_ID=".$user_id." and MESSAGE_ID='".$message_id."'");
 	if($req){
@@ -1736,7 +1706,7 @@ function vkApi_call($method, $params = array(), $fullans = false) {
   $this->writeLog($params, true);
   $curl = curl_init($url);
   curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-  curl_setopt($curl, CURLOPT_TIMEOUT, 3);
+  curl_setopt($curl, CURLOPT_TIMEOUT, 6);
   curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
   curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
   $json = curl_exec($curl);

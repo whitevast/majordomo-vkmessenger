@@ -16,8 +16,6 @@ echo date("H:i:s") . " running " . basename(__FILE__) . PHP_EOL;
 $latest_check=0;
 $checkEvery=5;
 $version = V_API;
-if(!$vkmessenger_module->config['VK_WEBHOOK']) $connect = $vkmessenger_module->vkApi_call('groups.getLongPollServer');
-if(!DEBUG) $vkmessenger_module->usersUpdate(true);
 echo 'Start vkmessenger cycle' . PHP_EOL;
 
 while (1){
@@ -69,6 +67,7 @@ while (1){
 		} else { //если данные для подключения отсутствуют (нет доступа в интернет), пробуем получить их каждые 5 секунд
 			$connect = $vkmessenger_module->vkApi_call('groups.getLongPollServer');
 			if(!isset($connect['server'])) sleep(5);
+			else if(!DEBUG) $vkmessenger_module->usersUpdate(true);
 		}
 	} else sleep(1);
 	if (file_exists('./reboot') || isset($_GET['onetime'])) exit;

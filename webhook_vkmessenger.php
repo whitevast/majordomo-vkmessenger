@@ -1,5 +1,4 @@
 <?php
-
 include_once("./config.php");
 include_once("./lib/loader.php");
 include_once("./load_settings.php");
